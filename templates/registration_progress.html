@@ -1,0 +1,302 @@
+{% extends "base.html" %}
+
+{% block title %}Registrierung läuft...{% endblock %}
+
+{% block content %}
+<div class="columns is-centered">
+    <div class="column is-four-fifths">
+        <div class="box dark-box">
+            <h1 class="title is-3 has-text-light has-text-centered">
+                <i class="fas fa-rocket"></i>
+                Geräte werden registriert...
+            </h1>
+            
+            <!-- Progress Bar -->
+            <div class="box" style="background-color: #0f0f0f; border: 1px solid #3273dc;">
+                <div class="mb-3">
+                    <div class="level">
+                        <div class="level-left">
+                            <div class="level-item">
+                                <h2 class="subtitle is-5 has-text-light mb-0" id="progressText">
+                                    Verbinde mit ChirpStack...
+                                </h2>
+                            </div>
+                        </div>
+                        <div class="level-right">
+                            <div class="level-item">
+                                <h2 class="subtitle is-5 has-text-light mb-0" id="progressCount">
+                                    0 / 0
+                                </h2>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <progress class="progress is-large is-info" id="progressBar" value="0" max="100">0%</progress>
+                
+                <div class="has-text-centered mt-3">
+                    <span class="tag is-large is-info" id="progressPercent">0%</span>
+                </div>
+            </div>
+
+            <!-- Current Device Info -->
+            <div class="notification is-info dark-notification" id="currentDevice" style="display: none;">
+                <div class="level">
+                    <div class="level-left">
+                        <div class="level-item">
+                            <span class="icon is-large">
+                                <i class="fas fa-2x fa-spinner fa-pulse"></i>
+                            </span>
+                        </div>
+                        <div class="level-item">
+                            <div>
+                                <p class="heading">Aktuelles Gerät</p>
+                                <p class="title is-5 has-text-light" id="currentDeviceName">-</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="level-right">
+                        <div class="level-item">
+                            <span class="tag is-light is-large" id="currentDeviceStatus">Registriere...</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Activities -->
+            <div class="box" style="background-color: #1a1a1a; max-height: 300px; overflow-y: auto;">
+                <h3 class="subtitle is-5 has-text-light">
+                    <i class="fas fa-list"></i> Letzte Aktivitäten
+                </h3>
+                <div id="activityLog">
+                    <p class="has-text-grey-light">Warte auf Start...</p>
+                </div>
+            </div>
+
+            <!-- Completion Message (hidden initially) -->
+            <div class="notification is-success dark-notification" id="completionMessage" style="display: none;">
+                <h3 class="subtitle is-4 has-text-light">
+                    <i class="fas fa-check-circle"></i> Registrierung abgeschlossen!
+                </h3>
+                <p class="has-text-light mb-3">
+                    <strong id="successCount">0</strong> Geräte erfolgreich registriert,
+                    <strong id="failedCount">0</strong> fehlgeschlagen
+                </p>
+                <a href="{{ url_for('registration_results') }}" class="button is-success">
+                    <span class="icon">
+                        <i class="fas fa-chart-bar"></i>
+                    </span>
+                    <span>Detaillierte Ergebnisse anzeigen</span>
+                </a>
+            </div>
+
+            <!-- Error Message (hidden initially) -->
+            <div class="notification is-danger dark-notification" id="errorMessage" style="display: none;">
+                <h3 class="subtitle is-5 has-text-light">
+                    <i class="fas fa-exclamation-circle"></i> Fehler
+                </h3>
+                <p class="has-text-light" id="errorText"></p>
+                <a href="{{ url_for('index') }}" class="button is-danger mt-3">
+                    <span class="icon">
+                        <i class="fas fa-home"></i>
+                    </span>
+                    <span>Zurück zur Startseite</span>
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+#activityLog {
+    font-family: monospace;
+    font-size: 0.9rem;
+}
+
+.activity-item {
+    padding: 0.5rem;
+    margin-bottom: 0.5rem;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateX(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+.activity-success {
+    background-color: rgba(72, 199, 116, 0.1);
+    border-left: 3px solid #48c774;
+}
+
+.activity-failed {
+    background-color: rgba(241, 70, 104, 0.1);
+    border-left: 3px solid #f14668;
+}
+
+.activity-warning {
+    background-color: rgba(255, 224, 138, 0.1);
+    border-left: 3px solid #ffe08a;
+}
+
+.activity-skipped {
+    background-color: rgba(50, 115, 220, 0.1);
+    border-left: 3px solid #3273dc;
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const progressBar = document.getElementById('progressBar');
+    const progressText = document.getElementById('progressText');
+    const progressCount = document.getElementById('progressCount');
+    const progressPercent = document.getElementById('progressPercent');
+    const currentDevice = document.getElementById('currentDevice');
+    const currentDeviceName = document.getElementById('currentDeviceName');
+    const currentDeviceStatus = document.getElementById('currentDeviceStatus');
+    const activityLog = document.getElementById('activityLog');
+    const completionMessage = document.getElementById('completionMessage');
+    const errorMessage = document.getElementById('errorMessage');
+    const errorText = document.getElementById('errorText');
+    const successCount = document.getElementById('successCount');
+    const failedCount = document.getElementById('failedCount');
+    
+    // Get duplicate action from form
+    const duplicateAction = '{{ duplicate_action }}' || 'skip';
+    
+    // Create EventSource for Server-Sent Events
+    const formData = new FormData();
+    formData.append('duplicate_action', duplicateAction);
+    
+    fetch('{{ url_for("register_devices_stream") }}', {
+        method: 'POST',
+        body: formData
+    }).then(response => {
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        
+        function readStream() {
+            reader.read().then(({ done, value }) => {
+                if (done) {
+                    return;
+                }
+                
+                const chunk = decoder.decode(value);
+                const lines = chunk.split('\n');
+                
+                lines.forEach(line => {
+                    if (line.startsWith('data: ')) {
+                        const jsonData = line.substring(6);
+                        try {
+                            const data = JSON.parse(jsonData);
+                            handleProgress(data);
+                        } catch (e) {
+                            console.error('Parse error:', e);
+                        }
+                    }
+                });
+                
+                readStream();
+            });
+        }
+        
+        readStream();
+    }).catch(error => {
+        console.error('Stream error:', error);
+        errorMessage.style.display = 'block';
+        errorText.textContent = 'Verbindungsfehler: ' + error.message;
+    });
+    
+    function handleProgress(data) {
+        if (data.error) {
+            errorMessage.style.display = 'block';
+            errorText.textContent = data.error;
+            currentDevice.style.display = 'none';
+            return;
+        }
+        
+        if (data.status === 'starting') {
+            progressBar.max = data.total;
+            progressCount.textContent = `0 / ${data.total}`;
+            progressText.textContent = 'Starte Registrierung...';
+            activityLog.innerHTML = '<p class="has-text-grey-light">Registrierung gestartet...</p>';
+        }
+        
+        else if (data.status === 'processing') {
+            const percent = Math.round((data.current / data.total) * 100);
+            progressBar.value = data.current;
+            progressCount.textContent = `${data.current} / ${data.total}`;
+            progressPercent.textContent = `${percent}%`;
+            progressText.textContent = `Registriere Geräte... (${percent}%)`;
+            
+            currentDevice.style.display = 'block';
+            currentDeviceName.textContent = data.device;
+            
+            // Update status badge
+            let statusClass = 'is-info';
+            let statusIcon = 'fa-spinner fa-pulse';
+            let statusText = 'Registriere...';
+            
+            if (data.result === 'success') {
+                statusClass = 'is-success';
+                statusIcon = 'fa-check';
+                statusText = 'Erfolgreich';
+            } else if (data.result === 'failed') {
+                statusClass = 'is-danger';
+                statusIcon = 'fa-times';
+                statusText = 'Fehlgeschlagen';
+            } else if (data.result === 'warning') {
+                statusClass = 'is-warning';
+                statusIcon = 'fa-exclamation-triangle';
+                statusText = 'Warnung';
+            } else if (data.result === 'skipped') {
+                statusClass = 'is-info';
+                statusIcon = 'fa-forward';
+                statusText = 'Übersprungen';
+            }
+            
+            currentDeviceStatus.className = `tag is-light is-large ${statusClass}`;
+            currentDeviceStatus.innerHTML = `<i class="fas ${statusIcon} mr-2"></i>${statusText}`;
+            
+            // Add to activity log
+            const activityClass = `activity-${data.result}`;
+            const activityItem = document.createElement('div');
+            activityItem.className = `activity-item ${activityClass}`;
+            activityItem.innerHTML = `
+                <span class="icon mr-2">
+                    <i class="fas ${statusIcon}"></i>
+                </span>
+                <strong style="min-width: 150px;">${data.device}</strong>
+                <span class="has-text-grey-light ml-3">${data.message}</span>
+            `;
+            
+            // Keep only last 10 items
+            if (activityLog.children.length >= 10) {
+                activityLog.removeChild(activityLog.lastChild);
+            }
+            activityLog.insertBefore(activityItem, activityLog.firstChild);
+        }
+        
+        else if (data.status === 'complete') {
+            progressBar.value = progressBar.max;
+            progressPercent.textContent = '100%';
+            progressText.textContent = 'Registrierung abgeschlossen!';
+            currentDevice.style.display = 'none';
+            
+            successCount.textContent = data.successful;
+            failedCount.textContent = data.failed;
+            completionMessage.style.display = 'block';
+        }
+    }
+});
+</script>
+{% endblock %}

@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hilfe - ChirpStack IDs</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.4/css/bulma.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* Force dark mode */
+        body {
+            background-color: #0a0a0a !important;
+            color: #f5f5f5 !important;
+            min-height: 100vh;
+        }
+        
+        .hero {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+        }
+        
+        .box {
+            background-color: #1a1a1a !important;
+            color: #f5f5f5 !important;
+            border: 1px solid #2a2a2a;
+        }
+        
+        .title, .subtitle {
+            color: #f5f5f5 !important;
+        }
+        
+        .content {
+            color: #f5f5f5 !important;
+        }
+        
+        .content h3 {
+            color: #3273dc !important;
+            margin-top: 2rem !important;
+        }
+        
+        .content code {
+            background-color: #2a2a2a !important;
+            color: #50fa7b !important;
+            padding: 0.25em 0.5em;
+            border-radius: 3px;
+        }
+        
+        .content pre {
+            background-color: #0f0f0f !important;
+            color: #f5f5f5 !important;
+            border: 1px solid #2a2a2a;
+            padding: 1rem;
+        }
+        
+        .message {
+            background-color: #1a1a1a;
+        }
+        
+        .message.is-info {
+            background-color: #1a2a3a;
+            border-color: #3273dc;
+        }
+        
+        .message.is-warning {
+            background-color: #2e2a1a;
+            border-color: #ffe08a;
+        }
+        
+        .message-header {
+            background-color: rgba(0,0,0,0.2) !important;
+        }
+        
+        .message-body {
+            border-color: rgba(255,255,255,0.1) !important;
+            color: #f5f5f5 !important;
+        }
+        
+        .step-number {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 2rem;
+            height: 2rem;
+            border-radius: 50%;
+            background-color: #3273dc;
+            color: white;
+            font-weight: bold;
+            margin-right: 0.75rem;
+        }
+        
+        .step-box {
+            border-left: 4px solid #3273dc;
+            padding-left: 1rem;
+            margin-bottom: 1.5rem;
+        }
+        
+        .screenshot-placeholder {
+            background-color: #0f0f0f;
+            border: 2px dashed #3273dc;
+            padding: 3rem;
+            text-align: center;
+            border-radius: 6px;
+            color: #888;
+            margin: 1rem 0;
+        }
+        
+        .uuid-example {
+            font-family: 'Courier New', monospace;
+            background-color: #0f0f0f;
+            padding: 1rem;
+            border-radius: 6px;
+            border-left: 4px solid #50fa7b;
+            margin: 1rem 0;
+        }
+        
+        .button.is-primary {
+            background-color: #3273dc;
+            border-color: transparent;
+        }
+        
+        .button.is-link {
+            background-color: transparent;
+            border-color: #3273dc;
+            color: #3273dc;
+        }
+    </style>
+</head>
+<body>
+    <section class="hero is-primary is-small">
+        <div class="hero-body">
+            <div class="container">
+                <h1 class="title">
+                    <i class="fas fa-question-circle"></i> Hilfe & Anleitung
+                </h1>
+                <p class="subtitle">
+                    So erhalten Sie die benötigten IDs aus ChirpStack
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <section class="section">
+        <div class="container">
+            <div class="columns is-centered">
+                <div class="column is-10">
+                    
+                    <!-- Common Error -->
+                    <div class="message is-warning">
+                        <div class="message-header">
+                            <p><i class="fas fa-exclamation-triangle"></i> Häufiger Fehler</p>
+                        </div>
+                        <div class="message-body">
+                            <p><strong>Fehler:</strong> <code>Device Profile ID is not a valid UUID</code></p>
+                            <p style="margin-top: 0.5rem;">
+                                Dieser Fehler tritt auf, wenn Sie keine gültige UUID für Application ID oder Device Profile ID verwenden.
+                                ChirpStack v4 verwendet UUIDs im Format: <code>xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx</code>
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- UUID Format -->
+                    <div class="box">
+                        <h2 class="title is-4">
+                            <i class="fas fa-key"></i> UUID-Format
+                        </h2>
+                        <div class="content">
+                            <p>Eine UUID (Universally Unique Identifier) sieht so aus:</p>
+                            <div class="uuid-example">
+                                <span style="color: #50fa7b;">79538b65-4bf1-47cb-80bb-5019090adadb</span>
+                            </div>
+                            <p>❌ <strong>FALSCH:</strong></p>
+                            <ul>
+                                <li><code>profile-otaa-class-a</code> (kein UUID-Format)</li>
+                                <li><code>my-application</code> (kein UUID-Format)</li>
+                                <li><code>12345</code> (zu kurz)</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <!-- Getting Application ID -->
+                    <div class="box">
+                        <h2 class="title is-4">
+                            <i class="fas fa-clipboard-list"></i> Application ID finden
+                        </h2>
+                        <div class="content">
+                            <div class="step-box">
+                                <h3><span class="step-number">1</span> ChirpStack öffnen</h3>
+                                <p>Öffnen Sie ChirpStack in Ihrem Browser (normalerweise <code>http://localhost:8080</code>)</p>
+                            </div>
+
+                            <div class="step-box">
+                                <h3><span class="step-number">2</span> Zu Applications navigieren</h3>
+                                <p>Klicken Sie im linken Menü auf <strong>"Applications"</strong></p>
+                            </div>
+
+                            <div class="step-box">
+                                <h3><span class="step-number">3</span> Application auswählen</h3>
+                                <p>Wählen Sie die Application aus, zu der Sie Geräte hinzufügen möchten</p>
+                            </div>
+
+                            <div class="step-box">
+                                <h3><span class="step-number">4</span> Application ID kopieren</h3>
+                                <p>Die <strong>Application ID</strong> wird oben auf der Seite angezeigt. Sie hat das UUID-Format:</p>
+                                <div class="uuid-example">
+                                    <strong>Application ID:</strong> <span style="color: #50fa7b;">79538b65-4bf1-47cb-80bb-5019090adadb</span>
+                                </div>
+                                <p>Kopieren Sie diese ID und verwenden Sie sie in Ihrer Excel-Datei.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Getting Device Profile ID -->
+                    <div class="box">
+                        <h2 class="title is-4">
+                            <i class="fas fa-microchip"></i> Device Profile ID finden
+                        </h2>
+                        <div class="content">
+                            <div class="step-box">
+                                <h3><span class="step-number">1</span> Zu Device Profiles navigieren</h3>
+                                <p>Klicken Sie im linken Menü auf <strong>"Device profiles"</strong></p>
+                            </div>
+
+                            <div class="step-box">
+                                <h3><span class="step-number">2</span> Richtiges Profil wählen</h3>
+                                <p>Klicken Sie auf das Device Profile, das Sie verwenden möchten (z.B. "OTAA Class A")</p>
+                            </div>
+
+                            <div class="step-box">
+                                <h3><span class="step-number">3</span> Device Profile ID kopieren</h3>
+                                <p>Die <strong>Device profile ID</strong> wird oben auf der Seite angezeigt:</p>
+                                <div class="uuid-example">
+                                    <strong>Device profile ID:</strong> <span style="color: #50fa7b;">a1b2c3d4-e5f6-4789-a012-3456789abcde</span>
+                                </div>
+                                <p>Kopieren Sie diese ID und verwenden Sie sie in Ihrer Excel-Datei.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Excel File Structure -->
+                    <div class="box">
+                        <h2 class="title is-4">
+                            <i class="fas fa-file-excel"></i> Excel-Datei Struktur
+                        </h2>
+                        <div class="content">
+                            <p>Ihre Excel-Datei sollte folgende Spalten enthalten (alle UUIDs müssen gültig sein):</p>
+                            <table class="table is-fullwidth" style="background-color: #0f0f0f; color: #f5f5f5;">
+                                <thead>
+                                    <tr style="background-color: #1a1a1a;">
+                                        <th style="color: #f5f5f5;">Spalte</th>
+                                        <th style="color: #f5f5f5;">Beispiel</th>
+                                        <th style="color: #f5f5f5;">Format</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td><code>dev_eui</code></td>
+                                        <td><code>0004A30B001A2B3C</code></td>
+                                        <td>16 hex Zeichen</td>
+                                    </tr>
+                                    <tr>
+                                        <td><code>name</code></td>
+                                        <td><code>Test Device 1</code></td>
+                                        <td>Text</td>
+                                    </tr>
+                                    <tr>
+                                        <td><code>application_id</code></td>
+                                        <td><code>79538b65-4bf1-47cb-80bb-5019090adadb</code></td>
+                                        <td><strong>UUID (erforderlich!)</strong></td>
+                                    </tr>
+                                    <tr>
+                                        <td><code>device_profile_id</code></td>
+                                        <td><code>a1b2c3d4-e5f6-4789-a012-3456789abcde</code></td>
+                                        <td><strong>UUID (erforderlich!)</strong></td>
+                                    </tr>
+                                    <tr>
+                                        <td><code>nwk_key</code></td>
+                                        <td><code>00112233445566778899AABBCCDDEEF0</code></td>
+                                        <td>32 hex Zeichen</td>
+                                    </tr>
+                                    <tr>
+                                        <td><code>app_key</code></td>
+                                        <td><code>FFEEDDCCBBAA99887766554433221100</code></td>
+                                        <td>32 hex Zeichen (optional)</td>
+                                    </tr>
+                                    <tr>
+                                        <td><code>description</code></td>
+                                        <td><code>Temperature sensor</code></td>
+                                        <td>Text (optional)</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Quick Checklist -->
+                    <div class="message is-info">
+                        <div class="message-header">
+                            <p><i class="fas fa-check-square"></i> Checkliste vor der Registrierung</p>
+                        </div>
+                        <div class="message-body">
+                            <div class="content">
+                                <ul style="margin-bottom: 0;">
+                                    <li>✓ Server URL ist konfiguriert (z.B. <code>localhost:8080</code>)</li>
+                                    <li>✓ API Key ist gültig und hat Schreibrechte</li>
+                                    <li>✓ Application ID ist eine gültige UUID (nicht <code>profile-xyz</code>)</li>
+                                    <li>✓ Device Profile ID ist eine gültige UUID (nicht <code>my-app</code>)</li>
+                                    <li>✓ DevEUIs sind eindeutig (16 hex Zeichen)</li>
+                                    <li>✓ Keys sind 32 hex Zeichen lang</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="buttons is-centered" style="margin-top: 2rem;">
+                        <a href="{{ url_for('test_connection') }}" class="button is-primary">
+                            <span class="icon">
+                                <i class="fas fa-plug"></i>
+                            </span>
+                            <span>Verbindung testen</span>
+                        </a>
+                        <a href="{{ url_for('index') }}" class="button is-link">
+                            <span class="icon">
+                                <i class="fas fa-home"></i>
+                            </span>
+                            <span>Zur Startseite</span>
+                        </a>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer class="footer" style="background-color: #0a0a0a; border-top: 1px solid #2a2a2a;">
+        <div class="content has-text-centered">
+            <p style="color: #888;">
+                <strong style="color: #f5f5f5;">LoRaWAN Device Registration</strong><br>
+                <small>Master Thesis Project</small>
+            </p>
+        </div>
+    </footer>
+</body>
+</html>

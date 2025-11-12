@@ -1,0 +1,220 @@
+/* Custom styles for Excel Preview App - Dark Mode */
+
+body.dark-mode {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    background-color: #1a1a1a;
+    color: #e0e0e0;
+}
+
+.section {
+    flex: 1;
+    padding-top: 5rem;
+}
+
+/* Dark Mode Box Styling */
+.dark-box {
+    background-color: #2b2b2b;
+    border: 1px solid #404040;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+}
+
+.dark-notification {
+    background-color: #2b2b2b;
+    border-left: 4px solid #3298dc;
+}
+
+.dark-footer {
+    background-color: #1a1a1a;
+    border-top: 1px solid #404040;
+}
+
+/* Table styling */
+.table-wrapper {
+    overflow-x: auto;
+    overflow-y: auto;
+    max-width: 100%;
+    max-height: 600px;
+    border: 1px solid #404040;
+    border-radius: 4px;
+    background-color: #1e1e1e;
+}
+
+.table-container {
+    overflow: visible;
+}
+
+.table-container .table {
+    background-color: #1e1e1e;
+    color: #e0e0e0;
+    font-size: 0.9rem;
+    margin-bottom: 0;
+    width: 100%;
+    table-layout: auto;
+}
+
+.table-container .table th {
+    background-color: #3298dc;
+    color: white;
+    font-weight: 600;
+    text-align: left;
+    padding: 0.75rem;
+    white-space: nowrap;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    border-bottom: 2px solid #404040;
+}
+
+.table-container .table td {
+    padding: 0.5rem 0.75rem;
+    vertical-align: middle;
+    white-space: nowrap;
+    max-width: 300px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    border-bottom: 1px solid #333333;
+    color: #d0d0d0;
+}
+
+.table-container .table tbody tr:hover {
+    background-color: #2a2a2a;
+}
+
+.table-container .table td:hover {
+    white-space: normal;
+    overflow: visible;
+    max-width: none;
+    background-color: #353535;
+}
+
+/* File input styling */
+.file-input:focus + .file-cta {
+    border-color: #3298dc;
+    box-shadow: 0 0 0 0.125em rgba(50, 152, 220, 0.25);
+}
+
+.file.has-name .file-name {
+    background-color: #2b2b2b;
+    color: #e0e0e0;
+    border-color: #404040;
+}
+
+/* Select dropdown dark mode */
+.select select {
+    background-color: #2b2b2b;
+    color: #e0e0e0;
+    border-color: #404040;
+}
+
+.select select:hover {
+    border-color: #3298dc;
+}
+
+.select select option {
+    background-color: #2b2b2b;
+    color: #e0e0e0;
+}
+
+/* Input and Textarea dark mode */
+.dark-input {
+    background-color: #2b2b2b;
+    color: #e0e0e0;
+    border-color: #404040;
+}
+
+.dark-input:focus {
+    background-color: #2b2b2b;
+    color: #e0e0e0;
+    border-color: #3298dc;
+    box-shadow: 0 0 0 0.125em rgba(50, 152, 220, 0.25);
+}
+
+.dark-input::placeholder {
+    color: #757575;
+}
+
+.dark-textarea {
+    background-color: #2b2b2b;
+    color: #e0e0e0;
+    border-color: #404040;
+    font-family: 'Courier New', monospace;
+}
+
+.dark-textarea:focus {
+    background-color: #2b2b2b;
+    color: #e0e0e0;
+    border-color: #3298dc;
+    box-shadow: 0 0 0 0.125em rgba(50, 152, 220, 0.25);
+}
+
+.dark-textarea::placeholder {
+    color: #757575;
+}
+
+/* Notification styling */
+.notification {
+    animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Responsive adjustments */
+@media screen and (max-width: 768px) {
+    .table-container .table {
+        font-size: 0.8rem;
+    }
+    
+    .table-container .table th,
+    .table-container .table td {
+        padding: 0.4rem 0.5rem;
+    }
+}
+
+/* Box shadow for elevated look */
+.box {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+/* Button hover effect */
+.button.is-info:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+    transition: all 0.2s ease;
+}
+
+/* Level component dark mode */
+.level {
+    margin-bottom: 1.5rem;
+}
+
+/* Help text styling */
+.help {
+    margin-top: 0.5rem;
+}
+
+/* Tag styling for dark mode */
+.tag.is-info {
+    background-color: #3298dc;
+    color: white;
+}
+
+.tag.is-success {
+    background-color: #48c774;
+    color: white;
+}
+
+.tag.is-warning {
+    background-color: #ffdd57;
+    color: rgba(0, 0, 0, 0.7);
+}

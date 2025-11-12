@@ -1,0 +1,252 @@
+{% extends "base.html" %}
+
+{% block title %}Spalten-Zuordnung{% endblock %}
+
+{% block content %}
+<div class="columns is-centered">
+    <div class="column is-four-fifths">
+        <!-- Flash Messages -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                <div class="notification is-{{ category }} dark-notification">
+                    <button class="delete"></button>
+                    {{ message }}
+                </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <div class="box dark-box">
+            <h1 class="title is-3 has-text-light">
+                <i class="fas fa-columns"></i>
+                Spalten-Zuordnung
+            </h1>
+            <p class="subtitle is-6 has-text-grey-light">
+                Ordnen Sie die Spalten aus Ihrer Datei den erforderlichen Gerätefeldern zu
+            </p>
+
+            <div class="notification is-info dark-notification mb-5">
+                <p><strong>Datei:</strong> {{ filename }}</p>
+                <p><strong>Sheet:</strong> {{ selected_sheet }}</p>
+                <p><strong>Anzahl Geräte:</strong> {{ row_count }}</p>
+            </div>
+
+            <form method="POST" action="{{ url_for('process_mapping') }}">
+                <div class="columns is-multiline">
+                    <!-- DevEUI - Required -->
+                    <div class="column is-half">
+                        <div class="field">
+                            <label class="label has-text-light">
+                                <span class="tag is-danger is-light mr-2">Erforderlich</span>
+                                Device EUI
+                            </label>
+                            <div class="control has-icons-left">
+                                <div class="select is-fullwidth dark-select">
+                                    <select name="dev_eui" required>
+                                        <option value="">-- Spalte auswählen --</option>
+                                        {% for col in columns %}
+                                        <option value="{{ col }}" {% if col.lower() in ['dev_eui', 'deveui', 'device_eui'] %}selected{% endif %}>{{ col }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <span class="icon is-left">
+                                    <i class="fas fa-fingerprint"></i>
+                                </span>
+                            </div>
+                            <p class="help has-text-grey-light">16 Zeichen Hexadezimal (z.B. 0004A30B001A2B3C)</p>
+                        </div>
+                    </div>
+
+                    <!-- Name - Required -->
+                    <div class="column is-half">
+                        <div class="field">
+                            <label class="label has-text-light">
+                                <span class="tag is-danger is-light mr-2">Erforderlich</span>
+                                Device Name
+                            </label>
+                            <div class="control has-icons-left">
+                                <div class="select is-fullwidth dark-select">
+                                    <select name="name" required>
+                                        <option value="">-- Spalte auswählen --</option>
+                                        {% for col in columns %}
+                                        <option value="{{ col }}" {% if col.lower() in ['name', 'device_name', 'devicename'] %}selected{% endif %}>{{ col }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <span class="icon is-left">
+                                    <i class="fas fa-tag"></i>
+                                </span>
+                            </div>
+                            <p class="help has-text-grey-light">Anzeigename des Geräts</p>
+                        </div>
+                    </div>
+
+                    <!-- Application ID - Required -->
+                    <div class="column is-half">
+                        <div class="field">
+                            <label class="label has-text-light">
+                                <span class="tag is-danger is-light mr-2">Erforderlich</span>
+                                Application ID
+                            </label>
+                            <div class="control has-icons-left">
+                                <div class="select is-fullwidth dark-select">
+                                    <select name="application_id" required>
+                                        <option value="">-- Spalte auswählen --</option>
+                                        {% for col in columns %}
+                                        <option value="{{ col }}" {% if col.lower() in ['application_id', 'app_id', 'applicationid'] %}selected{% endif %}>{{ col }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <span class="icon is-left">
+                                    <i class="fas fa-project-diagram"></i>
+                                </span>
+                            </div>
+                            <p class="help has-text-grey-light">UUID der ChirpStack-Anwendung</p>
+                        </div>
+                    </div>
+
+                    <!-- Device Profile ID - Required -->
+                    <div class="column is-half">
+                        <div class="field">
+                            <label class="label has-text-light">
+                                <span class="tag is-danger is-light mr-2">Erforderlich</span>
+                                Device Profile ID
+                            </label>
+                            <div class="control has-icons-left">
+                                <div class="select is-fullwidth dark-select">
+                                    <select name="device_profile_id" required>
+                                        <option value="">-- Spalte auswählen --</option>
+                                        {% for col in columns %}
+                                        <option value="{{ col }}" {% if col.lower() in ['device_profile_id', 'profile_id', 'deviceprofileid'] %}selected{% endif %}>{{ col }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <span class="icon is-left">
+                                    <i class="fas fa-microchip"></i>
+                                </span>
+                            </div>
+                            <p class="help has-text-grey-light">UUID des Geräteprofils</p>
+                        </div>
+                    </div>
+
+                    <!-- Network Key - Required -->
+                    <div class="column is-half">
+                        <div class="field">
+                            <label class="label has-text-light">
+                                <span class="tag is-danger is-light mr-2">Erforderlich</span>
+                                Network Key (NwkKey)
+                            </label>
+                            <div class="control has-icons-left">
+                                <div class="select is-fullwidth dark-select">
+                                    <select name="nwk_key" required>
+                                        <option value="">-- Spalte auswählen --</option>
+                                        {% for col in columns %}
+                                        <option value="{{ col }}" {% if col.lower() in ['nwk_key', 'nwkkey', 'network_key', 'networkkey'] %}selected{% endif %}>{{ col }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <span class="icon is-left">
+                                    <i class="fas fa-key"></i>
+                                </span>
+                            </div>
+                            <p class="help has-text-grey-light">32 Zeichen Hexadezimal</p>
+                        </div>
+                    </div>
+
+                    <!-- Application Key - Optional -->
+                    <div class="column is-half">
+                        <div class="field">
+                            <label class="label has-text-light">
+                                <span class="tag is-info is-light mr-2">Optional</span>
+                                Application Key (AppKey)
+                            </label>
+                            <div class="control has-icons-left">
+                                <div class="select is-fullwidth dark-select">
+                                    <select name="app_key">
+                                        <option value="">-- Keine / Spalte auswählen --</option>
+                                        {% for col in columns %}
+                                        <option value="{{ col }}" {% if col.lower() in ['app_key', 'appkey', 'application_key', 'applicationkey'] %}selected{% endif %}>{{ col }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <span class="icon is-left">
+                                    <i class="fas fa-key"></i>
+                                </span>
+                            </div>
+                            <p class="help has-text-grey-light">32 Zeichen Hexadezimal (falls vorhanden)</p>
+                        </div>
+                    </div>
+
+                    <!-- Description - Optional -->
+                    <div class="column is-half">
+                        <div class="field">
+                            <label class="label has-text-light">
+                                <span class="tag is-info is-light mr-2">Optional</span>
+                                Description
+                            </label>
+                            <div class="control has-icons-left">
+                                <div class="select is-fullwidth dark-select">
+                                    <select name="description">
+                                        <option value="">-- Keine / Spalte auswählen --</option>
+                                        {% for col in columns %}
+                                        <option value="{{ col }}" {% if col.lower() in ['description', 'desc', 'beschreibung'] %}selected{% endif %}>{{ col }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <span class="icon is-left">
+                                    <i class="fas fa-info-circle"></i>
+                                </span>
+                            </div>
+                            <p class="help has-text-grey-light">Beschreibung des Geräts</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Preview Section -->
+                <div class="notification is-dark mt-5">
+                    <h3 class="subtitle is-5 has-text-light">
+                        <i class="fas fa-eye"></i>
+                        Datenvorschau (erste 5 Zeilen)
+                    </h3>
+                    <div class="table-container" style="max-height: 400px; overflow-y: auto;">
+                        {{ preview_html|safe }}
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="field is-grouped is-grouped-centered mt-5">
+                    <div class="control">
+                        <a href="{{ url_for('select_sheet') }}" class="button is-light is-medium">
+                            <span class="icon">
+                                <i class="fas fa-arrow-left"></i>
+                            </span>
+                            <span>Zurück</span>
+                        </a>
+                    </div>
+                    <div class="control">
+                        <button type="submit" class="button is-primary is-medium">
+                            <span class="icon">
+                                <i class="fas fa-check"></i>
+                            </span>
+                            <span>Zuordnung bestätigen und weiter</span>
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Handle notification close buttons
+    document.addEventListener('DOMContentLoaded', () => {
+        (document.querySelectorAll('.notification .delete') || []).forEach(($delete) => {
+            const $notification = $delete.parentNode;
+            $delete.addEventListener('click', () => {
+                $notification.parentNode.removeChild($notification);
+            });
+        });
+    });
+</script>
+{% endblock %}

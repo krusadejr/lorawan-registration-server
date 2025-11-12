@@ -1,0 +1,19 @@
+2025-11-11 16:27:43,853 - __main__ - INFO - ================================================================================
+2025-11-11 16:27:43,853 - __main__ - INFO - Application started
+2025-11-11 16:27:43,854 - __main__ - INFO - ================================================================================
+2025-11-11 16:27:43,965 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://172.26.1.52:5000
+2025-11-11 16:27:43,966 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
+2025-11-11 16:27:43,970 - werkzeug - INFO -  * Restarting with stat
+2025-11-11 16:27:45,326 - __main__ - INFO - ================================================================================
+2025-11-11 16:27:45,326 - __main__ - INFO - Application started
+2025-11-11 16:27:45,327 - __main__ - INFO - ================================================================================
+2025-11-11 16:27:45,358 - werkzeug - WARNING -  * Debugger is active!
+2025-11-11 16:27:45,370 - werkzeug - INFO -  * Debugger PIN: 117-105-705
+2025-11-11 16:27:49,152 - werkzeug - INFO - 127.0.0.1 - - [11/Nov/2025 16:27:49] "GET / HTTP/1.1" 200 -
+2025-11-11 16:27:49,313 - werkzeug - INFO - 127.0.0.1 - - [11/Nov/2025 16:27:49] "GET /static/style.css HTTP/1.1" 200 -
+2025-11-11 16:27:50,492 - werkzeug - INFO - 127.0.0.1 - - [11/Nov/2025 16:27:50] "[33mGET /favicon.ico HTTP/1.1[0m" 404 -
+2025-11-11 16:27:56,682 - werkzeug - INFO - 127.0.0.1 - - [11/Nov/2025 16:27:56] "GET /server-config HTTP/1.1" 200 -
+2025-11-11 16:27:56,767 - werkzeug - INFO - 127.0.0.1 - - [11/Nov/2025 16:27:56] "[36mGET /static/style.css HTTP/1.1[0m" 304 -
