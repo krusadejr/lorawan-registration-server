@@ -5,3 +5,11 @@
 Mention in the thesis report: 
 1. hex UUIDs 
 2. device parameters, like the DevEUID, Application ID, etc. and explain with the help of examples. 
+
+Features of this webapp to mention in the master thesis: 
+1. Description provided for each function and what not. 
+2. Favicon? For the user readability. 
+
+Current API: 
+12.11.2025: 
+eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJhdWQiOiJjaGlycHN0YWNrIiwiaXNzIjoiY2hpcnBzdGFjayIsInN1YiI6ImM3YjQyNWZkLTg5OTQtNGVjZC05NWVjLTlkZGViMDBkMTcwYyIsInR5cCI6ImtleSJ9.frKgx21XV8zQe4WdJBVZct1jO5avTescU-2MjY6UZj0
