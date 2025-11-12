@@ -1,0 +1,7 @@
+1. Make a simple non gui, lightweight application based off on the main application. 
+2. Add the functionality to see the current devices, list them and then delete them if required. 
+
+
+Mention in the thesis report: 
+1. hex UUIDs 
+2. device parameters, like the DevEUID, Application ID, etc. and explain with the help of examples. 
