@@ -19,3 +19,42 @@
 2025-11-12 13:54:54,781 - werkzeug - INFO - 127.0.0.1 - - [12/Nov/2025 13:54:54] "[36mGET /static/style.css HTTP/1.1[0m" 304 -
 2025-11-12 14:03:00,591 - werkzeug - INFO - 127.0.0.1 - - [12/Nov/2025 14:03:00] "GET /server-config HTTP/1.1" 200 -
 2025-11-12 14:03:00,673 - werkzeug - INFO - 127.0.0.1 - - [12/Nov/2025 14:03:00] "[36mGET /static/style.css HTTP/1.1[0m" 304 -
+2025-11-12 14:23:51,551 - werkzeug - INFO - 127.0.0.1 - - [12/Nov/2025 14:23:51] "[32mPOST /save-server-config HTTP/1.1[0m" 302 -
+2025-11-12 14:23:51,597 - werkzeug - INFO - 127.0.0.1 - - [12/Nov/2025 14:23:51] "GET / HTTP/1.1" 200 -
+2025-11-12 14:23:51,665 - werkzeug - INFO - 127.0.0.1 - - [12/Nov/2025 14:23:51] "[36mGET /static/style.css HTTP/1.1[0m" 304 -
+2025-11-12 14:23:57,969 - __main__ - INFO - ================================================================================
+2025-11-12 14:23:57,970 - __main__ - INFO - TEST CONNECTION REQUEST
+2025-11-12 14:23:57,970 - __main__ - INFO - ================================================================================
+2025-11-12 14:23:57,971 - __main__ - INFO - Testing connection to: http://localhost:8080/
+2025-11-12 14:23:59,280 - __main__ - INFO - Connection test successful
+2025-11-12 14:23:59,324 - werkzeug - INFO - 127.0.0.1 - - [12/Nov/2025 14:23:59] "GET /test-connection HTTP/1.1" 200 -
+2025-11-12 14:24:05,533 - werkzeug - INFO - 127.0.0.1 - - [12/Nov/2025 14:24:05] "GET / HTTP/1.1" 200 -
+2025-11-12 14:24:05,603 - werkzeug - INFO - 127.0.0.1 - - [12/Nov/2025 14:24:05] "[36mGET /static/style.css HTTP/1.1[0m" 304 -
+2025-11-12 14:33:25,772 - werkzeug - INFO - 127.0.0.1 - - [12/Nov/2025 14:33:25] "GET / HTTP/1.1" 200 -
+2025-11-12 14:33:25,826 - werkzeug - INFO - 127.0.0.1 - - [12/Nov/2025 14:33:25] "[36mGET /static/style.css HTTP/1.1[0m" 304 -
+2025-11-12 14:33:26,105 - werkzeug - INFO - 127.0.0.1 - - [12/Nov/2025 14:33:26] "[33mGET /favicon/favicon.ico HTTP/1.1[0m" 404 -
+2025-11-12 14:33:26,119 - werkzeug - INFO - 127.0.0.1 - - [12/Nov/2025 14:33:26] "[33mGET /favicon/favicon-32x32.png HTTP/1.1[0m" 404 -
+2025-11-12 14:33:26,142 - werkzeug - INFO - 127.0.0.1 - - [12/Nov/2025 14:33:26] "[33mGET /favicon/favicon-16x16.png HTTP/1.1[0m" 404 -
+2025-11-12 14:33:27,125 - werkzeug - INFO - 127.0.0.1 - - [12/Nov/2025 14:33:27] "GET / HTTP/1.1" 200 -
+2025-11-12 14:33:27,186 - werkzeug - INFO - 127.0.0.1 - - [12/Nov/2025 14:33:27] "[36mGET /static/style.css HTTP/1.1[0m" 304 -
+2025-11-12 14:34:14,863 - __main__ - INFO - ================================================================================
+2025-11-12 14:34:14,864 - __main__ - INFO - Application started
+2025-11-12 14:34:14,864 - __main__ - INFO - ================================================================================
+2025-11-12 14:34:14,939 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://172.26.1.37:5000
+2025-11-12 14:34:14,940 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
+2025-11-12 14:34:14,945 - werkzeug - INFO -  * Restarting with stat
+2025-11-12 14:34:16,715 - __main__ - INFO - ================================================================================
+2025-11-12 14:34:16,716 - __main__ - INFO - Application started
+2025-11-12 14:34:16,716 - __main__ - INFO - ================================================================================
+2025-11-12 14:34:16,747 - werkzeug - WARNING -  * Debugger is active!
+2025-11-12 14:34:16,754 - werkzeug - INFO -  * Debugger PIN: 867-551-594
+2025-11-12 14:34:19,141 - werkzeug - INFO - 127.0.0.1 - - [12/Nov/2025 14:34:19] "GET / HTTP/1.1" 200 -
+2025-11-12 14:34:19,380 - werkzeug - INFO - 127.0.0.1 - - [12/Nov/2025 14:34:19] "[36mGET /static/style.css HTTP/1.1[0m" 304 -
+2025-11-12 14:34:21,567 - werkzeug - INFO - 127.0.0.1 - - [12/Nov/2025 14:34:21] "GET / HTTP/1.1" 200 -
+2025-11-12 14:34:21,621 - werkzeug - INFO - 127.0.0.1 - - [12/Nov/2025 14:34:21] "[36mGET /static/style.css HTTP/1.1[0m" 304 -
+2025-11-12 14:35:32,667 - werkzeug - INFO - 127.0.0.1 - - [12/Nov/2025 14:35:32] "GET / HTTP/1.1" 200 -
+2025-11-12 14:35:32,725 - werkzeug - INFO - 127.0.0.1 - - [12/Nov/2025 14:35:32] "[36mGET /static/style.css HTTP/1.1[0m" 304 -
+2025-11-12 14:35:32,855 - werkzeug - INFO - 127.0.0.1 - - [12/Nov/2025 14:35:32] "GET /static/favicon/favicon.ico HTTP/1.1" 200 -
