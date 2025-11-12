@@ -58,3 +58,6 @@
 2025-11-12 14:35:32,667 - werkzeug - INFO - 127.0.0.1 - - [12/Nov/2025 14:35:32] "GET / HTTP/1.1" 200 -
 2025-11-12 14:35:32,725 - werkzeug - INFO - 127.0.0.1 - - [12/Nov/2025 14:35:32] "[36mGET /static/style.css HTTP/1.1[0m" 304 -
 2025-11-12 14:35:32,855 - werkzeug - INFO - 127.0.0.1 - - [12/Nov/2025 14:35:32] "GET /static/favicon/favicon.ico HTTP/1.1" 200 -
+2025-11-12 14:42:07,372 - werkzeug - INFO - 127.0.0.1 - - [12/Nov/2025 14:42:07] "GET / HTTP/1.1" 200 -
+2025-11-12 14:42:07,426 - werkzeug - INFO - 127.0.0.1 - - [12/Nov/2025 14:42:07] "[36mGET /static/style.css HTTP/1.1[0m" 304 -
+2025-11-12 14:42:07,693 - werkzeug - INFO - 127.0.0.1 - - [12/Nov/2025 14:42:07] "[36mGET /static/favicon/favicon.ico HTTP/1.1[0m" 304 -
