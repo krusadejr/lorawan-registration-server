@@ -1,7 +1,10 @@
 1. Make a simple non gui, lightweight application based off on the main application. 
 2. Add the functionality to see the current devices, list them and then delete them if required. 
+3. Add an executable file for easy launching. 
 
 
+
+THESIS Stuff: 
 Mention in the thesis report: 
 1. hex UUIDs 
 2. device parameters, like the DevEUID, Application ID, etc. and explain with the help of examples. 
@@ -9,6 +12,7 @@ Mention in the thesis report:
 Features of this webapp to mention in the master thesis: 
 1. Description provided for each function and what not. 
 2. Favicon? For the user readability. 
+
 
 Current API: 
 12.11.2025: 
