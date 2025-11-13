@@ -15,17 +15,18 @@
         <!-- Application ID Input -->
         <div class="box">
             <div class="field">
-                <label class="label has-text-white">Application ID</label>
+                <label class="label has-text-white">Application ID <span class="has-text-danger">*</span></label>
                 <div class="control has-icons-left">
                     <input class="input" type="text" id="application_id" 
                            placeholder="z.B. 550e8400-e29b-41d4-a716-446655440000"
-                           value="{{ session.get('application_id', '') }}">
+                           value="{{ session.get('application_id', '') }}"
+                           required>
                     <span class="icon is-small is-left">
                         <i class="fas fa-folder"></i>
                     </span>
                 </div>
                 <p class="help has-text-grey-light">
-                    Geben Sie die Application ID ein, um Geräte aufzulisten
+                    Application ID ist erforderlich, um Geräte aufzulisten
                 </p>
             </div>
 
@@ -94,18 +95,18 @@
                 </div>
 
                 <div class="table-container">
-                    <table class="table is-fullwidth is-hoverable">
+                    <table class="table is-fullwidth" style="background-color: white;">
                         <thead>
-                            <tr>
-                                <th style="width: 50px;">
+                            <tr style="background-color: white;">
+                                <th style="width: 50px; background-color: white; color: black; border: 1px solid #dbdbdb;">
                                     <label class="checkbox">
                                         <input type="checkbox" id="selectAll" onchange="toggleSelectAll()">
                                     </label>
                                 </th>
-                                <th class="has-text-white">DevEUI</th>
-                                <th class="has-text-white">Name</th>
-                                <th class="has-text-white">Beschreibung</th>
-                                <th class="has-text-white" style="width: 120px;">Aktionen</th>
+                                <th style="background-color: white; color: black; border: 1px solid #dbdbdb;">DevEUI</th>
+                                <th style="background-color: white; color: black; border: 1px solid #dbdbdb;">Name</th>
+                                <th style="background-color: white; color: black; border: 1px solid #dbdbdb;">Beschreibung</th>
+                                <th style="width: 120px; background-color: white; color: black; border: 1px solid #dbdbdb;">Aktionen</th>
                             </tr>
                         </thead>
                         <tbody id="devicesTableBody">
@@ -252,18 +253,18 @@ function displayDevices(devices) {
         row.dataset.name = (device.name || '').toLowerCase();
         
         row.innerHTML = `
-            <td>
+            <td style="background-color: white; color: black; border: 1px solid #dbdbdb;">
                 <label class="checkbox">
                     <input type="checkbox" class="device-checkbox" value="${device.dev_eui}"
                            onchange="updateDeleteButton()">
                 </label>
             </td>
-            <td class="has-text-white">
-                <code style="color: #50fa7b;">${device.dev_eui}</code>
+            <td style="background-color: white; color: black; border: 1px solid #dbdbdb;">
+                <code style="color: black;">${device.dev_eui}</code>
             </td>
-            <td class="has-text-white">${device.name || '-'}</td>
-            <td class="has-text-grey-light">${device.description || '-'}</td>
-            <td>
+            <td style="background-color: white; color: black; border: 1px solid #dbdbdb;">${device.name || '-'}</td>
+            <td style="background-color: white; color: black; border: 1px solid #dbdbdb;">${device.description || '-'}</td>
+            <td style="background-color: white; color: black; border: 1px solid #dbdbdb;">
                 <button class="button is-small is-danger is-outlined" 
                         onclick="deleteSingleDevice('${device.dev_eui}')">
                     <span class="icon is-small">

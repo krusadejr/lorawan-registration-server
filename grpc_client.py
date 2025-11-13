@@ -292,15 +292,31 @@ class ChirpStackClient:
                    data contains: {'total_count': int, 'devices': list}
         """
         try:
-            request = device_pb2.ListDevicesRequest(
-                limit=limit,
-                offset=offset,
-                search=search
-            )
+            # Build request parameters
+            request_params = {
+                'limit': limit,
+                'offset': offset
+            }
             
-            # Add application_id filter if provided
+            # Add optional fields only if provided
             if application_id:
-                request.application_id = application_id
+                request_params['application_id'] = application_id
+            
+            if search:
+                request_params['search'] = search
+            
+            # Debug logging
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.info(f"Creating ListDevicesRequest with params: {request_params}")
+            
+            # Create request with all parameters at once
+            try:
+                request = device_pb2.ListDevicesRequest(**request_params)
+                logger.info(f"Request created successfully. Request: {request}")
+            except Exception as req_error:
+                logger.error(f"Failed to create request: {req_error}")
+                return False, f"Failed to create request: {str(req_error)}"
             
             response = self.stub.List(request, metadata=self._get_metadata())
             
@@ -311,7 +327,6 @@ class ChirpStackClient:
                     'dev_eui': item.dev_eui,
                     'name': item.name,
                     'description': item.description,
-                    'application_id': item.application_id,
                     'device_profile_id': item.device_profile_id,
                     'device_profile_name': item.device_profile_name
                 }
@@ -325,8 +340,16 @@ class ChirpStackClient:
             return True, result
             
         except grpc.RpcError as e:
-            error_msg = f"gRPC Error: {e.code()}: {e.details()}"
+            error_msg = f"gRPC Error [{e.code().name}]: {e.details()}"
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"gRPC error in list_devices: code={e.code()}, details={e.details()}")
             return False, error_msg
+        except Exception as e:
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"Non-gRPC exception in list_devices: {type(e).__name__}: {str(e)}", exc_info=True)
+            return False, f"Error listing devices: {type(e).__name__}: {str(e)}"
         except Exception as e:
             return False, f"Error listing devices: {str(e)}"
     

@@ -1033,23 +1033,38 @@ def api_list_devices():
     
     try:
         # Get parameters from request
-        application_id = request.form.get('application_id', '')
-        search = request.form.get('search', '')
+        application_id = request.form.get('application_id', '').strip()
+        search = request.form.get('search', '').strip()
         limit = int(request.form.get('limit', 1000))
         offset = int(request.form.get('offset', 0))
         
-        logger.info(f"Listing devices: app_id={application_id}, search={search}, limit={limit}, offset={offset}")
+        logger.info(f"=== LIST DEVICES REQUEST ===")
+        logger.info(f"Application ID: '{application_id}'")
+        logger.info(f"Search: '{search}'")
+        logger.info(f"Limit: {limit}, Offset: {offset}")
+        logger.info(f"Server URL: {SERVER_URL}")
+        logger.info(f"API Key configured: {bool(API_CODE)}")
+        
+        # Validate application_id is provided
+        if not application_id:
+            logger.warning("Application ID is required but was not provided")
+            return {'success': False, 'message': 'Application ID ist erforderlich'}, 400
         
         # Create gRPC client
         from grpc_client import ChirpStackClient
         client = ChirpStackClient(SERVER_URL, API_CODE)
+        logger.info(f"gRPC client created")
         
         # Connect
+        logger.info(f"Attempting to connect to ChirpStack...")
         connected, conn_msg = client.connect()
         if not connected:
+            logger.error(f"Connection failed: {conn_msg}")
             return {'success': False, 'message': f'Connection failed: {conn_msg}'}, 500
+        logger.info(f"Connected successfully: {conn_msg}")
         
         # List devices
+        logger.info(f"Calling list_devices with application_id='{application_id}'...")
         success, result = client.list_devices(
             application_id=application_id,
             limit=limit,
@@ -1060,14 +1075,14 @@ def api_list_devices():
         client.close()
         
         if success:
-            logger.info(f"Retrieved {len(result['devices'])} devices (total: {result['total_count']})")
+            logger.info(f"✓ Successfully retrieved {len(result['devices'])} devices (total: {result['total_count']})")
             return {'success': True, 'data': result}
         else:
-            logger.error(f"Failed to list devices: {result}")
-            return {'success': False, 'message': result}, 500
+            logger.error(f"✗ Failed to list devices. Error: {result}")
+            return {'success': False, 'message': f'ChirpStack error: {result}'}, 500
             
     except Exception as e:
-        logger.error(f"Error listing devices: {e}", exc_info=True)
+        logger.error(f"✗ Exception in api_list_devices: {type(e).__name__}: {str(e)}", exc_info=True)
         return {'success': False, 'message': str(e)}, 500
 
 
@@ -1148,4 +1163,4 @@ def api_delete_devices_stream():
 
 
 if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0', port=5000)
+    app.run(debug=True, host='0.0.0.0', port=5000, use_reloader=False)
