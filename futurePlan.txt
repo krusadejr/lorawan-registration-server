@@ -1,5 +1,5 @@
 1. Make a simple non gui, lightweight application based off on the main application. 
-2. Add the functionality to see the current devices, list them and then delete them if required. 
+2. [DONE] - Add the functionality to see the current devices, list them and then delete them if required. 
 3. Add an executable file for easy launching. 
 
 
