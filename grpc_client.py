@@ -277,6 +277,59 @@ class ChirpStackClient:
         except Exception as e:
             return False, f"Error deleting device: {str(e)}"
     
+    def list_devices(self, application_id="", limit=100, offset=0, search=""):
+        """
+        List devices from ChirpStack
+        
+        Args:
+            application_id (str): Filter by application ID (optional)
+            limit (int): Maximum number of devices to return
+            offset (int): Offset for pagination
+            search (str): Search query for device name/dev_eui
+            
+        Returns:
+            tuple: (success: bool, data: dict or error_message: str)
+                   data contains: {'total_count': int, 'devices': list}
+        """
+        try:
+            request = device_pb2.ListDevicesRequest(
+                limit=limit,
+                offset=offset,
+                search=search
+            )
+            
+            # Add application_id filter if provided
+            if application_id:
+                request.application_id = application_id
+            
+            response = self.stub.List(request, metadata=self._get_metadata())
+            
+            # Convert response to dict
+            devices = []
+            for item in response.result:
+                device = {
+                    'dev_eui': item.dev_eui,
+                    'name': item.name,
+                    'description': item.description,
+                    'application_id': item.application_id,
+                    'device_profile_id': item.device_profile_id,
+                    'device_profile_name': item.device_profile_name
+                }
+                devices.append(device)
+            
+            result = {
+                'total_count': response.total_count,
+                'devices': devices
+            }
+            
+            return True, result
+            
+        except grpc.RpcError as e:
+            error_msg = f"gRPC Error: {e.code()}: {e.details()}"
+            return False, error_msg
+        except Exception as e:
+            return False, f"Error listing devices: {str(e)}"
+    
     def test_connection(self):
         """
         Test the connection to ChirpStack server

@@ -204,23 +204,21 @@ function loadDevices() {
     const formData = new FormData();
     formData.append('application_id', appId);
     
-    fetch('/list-devices', {
+    fetch('/api/list-devices', {
         method: 'POST',
         body: formData
     })
-    .then(response => response.text())
-    .then(text => {
-        const data = JSON.parse(text);
-        
+    .then(response => response.json())
+    .then(data => {
         document.getElementById('loadingDiv').style.display = 'none';
         document.getElementById('loadDevicesBtn').classList.remove('is-loading');
         
-        if (data.error) {
-            showError(data.error);
+        if (!data.success) {
+            showError(data.message || 'Fehler beim Laden der Geräte');
             return;
         }
         
-        currentDevices = data.devices;
+        currentDevices = data.data.devices;
         displayDevices(currentDevices);
     })
     .catch(error => {
@@ -379,38 +377,68 @@ function confirmDelete() {
     document.getElementById('deleteStatus').style.display = 'block';
     document.getElementById('deleteStatus').textContent = 'Lösche Geräte...';
     
-    fetch('/delete-devices', {
+    // Use Server-Sent Events for streaming progress
+    const formData = new FormData();
+    formData.append('dev_euis', devicesToDelete.join(','));
+    
+    fetch('/api/delete-devices-stream', {
         method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ dev_euis: devicesToDelete })
+        body: formData
     })
-    .then(response => response.text())
-    .then(text => {
-        const data = JSON.parse(text);
+    .then(response => {
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = '';
         
-        if (data.error) {
-            showError(data.error);
-            closeDeleteModal();
-            return;
+        function processText({ done, value }) {
+            if (done) {
+                closeDeleteModal();
+                setTimeout(() => loadDevices(), 1000);
+                return;
+            }
+            
+            buffer += decoder.decode(value, { stream: true });
+            const lines = buffer.split('\n');
+            buffer = lines.pop();
+            
+            lines.forEach(line => {
+                if (line.startsWith('data: ')) {
+                    const data = JSON.parse(line.substring(6));
+                    
+                    if (data.error) {
+                        showError(data.error);
+                        closeDeleteModal();
+                        return;
+                    }
+                    
+                    if (data.status === 'processing') {
+                        const progress = (data.current / data.total) * 100;
+                        document.getElementById('deleteProgress').value = progress;
+                        document.getElementById('deleteStatus').textContent = 
+                            `Lösche ${data.current}/${data.total}: ${data.device}`;
+                    }
+                    
+                    if (data.status === 'complete') {
+                        const successCount = data.results.successful.length;
+                        const failCount = data.results.failed.length;
+                        
+                        let message = `${successCount} Gerät(e) erfolgreich gelöscht.`;
+                        if (failCount > 0) {
+                            message += ` ${failCount} Gerät(e) konnten nicht gelöscht werden.`;
+                        }
+                        
+                        showSuccess(message);
+                        closeDeleteModal();
+                        setTimeout(() => loadDevices(), 1000);
+                        return;
+                    }
+                }
+            });
+            
+            return reader.read().then(processText);
         }
         
-        const successCount = data.successful.length;
-        const failCount = data.failed.length;
-        
-        let message = `${successCount} Gerät(e) erfolgreich gelöscht.`;
-        if (failCount > 0) {
-            message += ` ${failCount} Gerät(e) konnten nicht gelöscht werden.`;
-        }
-        
-        showSuccess(message);
-        closeDeleteModal();
-        
-        // Reload devices
-        setTimeout(() => {
-            loadDevices();
-        }, 1000);
+        return reader.read().then(processText);
     })
     .catch(error => {
         showError('Fehler beim Löschen: ' + error);

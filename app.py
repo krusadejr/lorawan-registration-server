@@ -1004,5 +1004,148 @@ def too_large(e):
     return redirect(url_for('index'))
 
 
+# ============================================================================
+# DEVICE MANAGEMENT ROUTES
+# ============================================================================
+
+@app.route('/device-management')
+def device_management():
+    """Device management page - view and delete devices."""
+    global SERVER_URL, API_CODE
+    
+    logger.info("="*80)
+    logger.info("DEVICE MANAGEMENT PAGE")
+    logger.info("="*80)
+    
+    # Check if server is configured
+    if not SERVER_URL or not API_CODE:
+        flash('Bitte konfigurieren Sie zuerst den Server', 'warning')
+        return redirect(url_for('server_config'))
+    
+    return render_template('device_management.html',
+                         server_url=SERVER_URL)
+
+
+@app.route('/api/list-devices', methods=['POST'])
+def api_list_devices():
+    """API endpoint to list devices."""
+    global SERVER_URL, API_CODE
+    
+    try:
+        # Get parameters from request
+        application_id = request.form.get('application_id', '')
+        search = request.form.get('search', '')
+        limit = int(request.form.get('limit', 1000))
+        offset = int(request.form.get('offset', 0))
+        
+        logger.info(f"Listing devices: app_id={application_id}, search={search}, limit={limit}, offset={offset}")
+        
+        # Create gRPC client
+        from grpc_client import ChirpStackClient
+        client = ChirpStackClient(SERVER_URL, API_CODE)
+        
+        # Connect
+        connected, conn_msg = client.connect()
+        if not connected:
+            return {'success': False, 'message': f'Connection failed: {conn_msg}'}, 500
+        
+        # List devices
+        success, result = client.list_devices(
+            application_id=application_id,
+            limit=limit,
+            offset=offset,
+            search=search
+        )
+        
+        client.close()
+        
+        if success:
+            logger.info(f"Retrieved {len(result['devices'])} devices (total: {result['total_count']})")
+            return {'success': True, 'data': result}
+        else:
+            logger.error(f"Failed to list devices: {result}")
+            return {'success': False, 'message': result}, 500
+            
+    except Exception as e:
+        logger.error(f"Error listing devices: {e}", exc_info=True)
+        return {'success': False, 'message': str(e)}, 500
+
+
+@app.route('/api/delete-devices-stream', methods=['POST'])
+def api_delete_devices_stream():
+    """Stream device deletion progress using SSE."""
+    
+    def generate():
+        """Generator function for Server-Sent Events"""
+        try:
+            # Get device EUIs from request
+            dev_euis = request.form.get('dev_euis', '')
+            if not dev_euis:
+                yield f"data: {json.dumps({'error': 'No devices specified'})}\n\n"
+                return
+            
+            # Parse comma-separated dev_euis
+            dev_eui_list = [eui.strip() for eui in dev_euis.split(',') if eui.strip()]
+            total = len(dev_eui_list)
+            
+            logger.info(f"Bulk delete requested for {total} devices")
+            
+            # Send initial status
+            yield f"data: {json.dumps({'status': 'starting', 'total': total, 'current': 0})}\n\n"
+            
+            # Create gRPC client
+            from grpc_client import ChirpStackClient
+            client = ChirpStackClient(SERVER_URL, API_CODE)
+            connected, conn_msg = client.connect()
+            
+            if not connected:
+                yield f"data: {json.dumps({'error': f'Connection failed: {conn_msg}'})}\n\n"
+                return
+            
+            results = {'successful': [], 'failed': []}
+            
+            # Delete each device
+            for idx, dev_eui in enumerate(dev_eui_list, 1):
+                try:
+                    logger.info(f"Deleting device {idx}/{total}: {dev_eui}")
+                    
+                    deleted, del_msg = client.delete_device(dev_eui)
+                    
+                    if deleted:
+                        results['successful'].append({
+                            'dev_eui': dev_eui
+                        })
+                        yield f"data: {json.dumps({'status': 'processing', 'current': idx, 'total': total, 'device': dev_eui, 'result': 'success'})}\n\n"
+                    else:
+                        results['failed'].append({
+                            'dev_eui': dev_eui,
+                            'error': del_msg
+                        })
+                        yield f"data: {json.dumps({'status': 'processing', 'current': idx, 'total': total, 'device': dev_eui, 'result': 'failed', 'message': del_msg})}\n\n"
+                    
+                    time.sleep(0.1)  # Small delay to avoid overwhelming the server
+                    
+                except Exception as e:
+                    logger.error(f"Error deleting device {dev_eui}: {e}")
+                    results['failed'].append({
+                        'dev_eui': dev_eui,
+                        'error': str(e)
+                    })
+                    yield f"data: {json.dumps({'status': 'processing', 'current': idx, 'total': total, 'device': dev_eui, 'result': 'failed', 'message': str(e)})}\n\n"
+            
+            # Close connection
+            client.close()
+            
+            # Send completion
+            logger.info(f"Bulk delete completed: {len(results['successful'])} successful, {len(results['failed'])} failed")
+            yield f"data: {json.dumps({'status': 'complete', 'results': results})}\n\n"
+            
+        except Exception as e:
+            logger.error(f"Error in delete stream: {e}", exc_info=True)
+            yield f"data: {json.dumps({'error': str(e)})}\n\n"
+    
+    return Response(stream_with_context(generate()), content_type='text/event-stream')
+
+
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)
