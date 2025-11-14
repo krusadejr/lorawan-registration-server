@@ -58,10 +58,15 @@ class ChirpStackClient:
                 # Set a short timeout to fail fast
                 self.stub.Get(request, metadata=self._get_metadata(), timeout=3.0)
             except grpc.RpcError as e:
-                # NOT_FOUND or UNAUTHENTICATED means server is reachable (connection OK)
-                if e.code() in [grpc.StatusCode.NOT_FOUND, grpc.StatusCode.UNAUTHENTICATED, 
-                               grpc.StatusCode.PERMISSION_DENIED, grpc.StatusCode.INVALID_ARGUMENT]:
-                    return True, "Connected successfully (server is reachable)"
+                # UNAUTHENTICATED means bad API token - this is a FAILURE
+                if e.code() == grpc.StatusCode.UNAUTHENTICATED:
+                    return False, "Authentication failed: API token is invalid or missing. Check API_CODE in Einstellungen (Settings)."
+                # PERMISSION_DENIED also means auth problem
+                elif e.code() == grpc.StatusCode.PERMISSION_DENIED:
+                    return False, "Permission denied: API token does not have required permissions."
+                # NOT_FOUND or INVALID_ARGUMENT means server is reachable and auth is OK
+                elif e.code() in [grpc.StatusCode.NOT_FOUND, grpc.StatusCode.INVALID_ARGUMENT]:
+                    return True, "Connected successfully (server is reachable and authenticated)"
                 # UNAVAILABLE, DEADLINE_EXCEEDED, etc. means connection failed
                 elif e.code() in [grpc.StatusCode.UNAVAILABLE, grpc.StatusCode.DEADLINE_EXCEEDED]:
                     return False, f"Server not reachable: {e.code()}: {e.details()}"
@@ -166,7 +171,18 @@ class ChirpStackClient:
             return True, f"Device {dev_eui} created successfully"
             
         except grpc.RpcError as e:
-            error_msg = f"gRPC Error: {e.code()}: {e.details()}"
+            if e.code() == grpc.StatusCode.UNAUTHENTICATED:
+                error_msg = "Authentication failed: API token is invalid or missing. Please check your API_CODE in Einstellungen (Settings)."
+            elif e.code() == grpc.StatusCode.PERMISSION_DENIED:
+                error_msg = "Permission denied: API token does not have permission to create devices."
+            elif e.code() == grpc.StatusCode.ALREADY_EXISTS:
+                error_msg = "Device already exists in ChirpStack."
+            elif e.code() == grpc.StatusCode.INVALID_ARGUMENT:
+                error_msg = f"Invalid data: {e.details()}"
+            elif e.code() == grpc.StatusCode.UNAVAILABLE:
+                error_msg = "ChirpStack server is unavailable. Check if server is running."
+            else:
+                error_msg = f"gRPC Error [{e.code().name}]: {e.details()}"
             return False, error_msg
         except Exception as e:
             return False, f"Error creating device: {str(e)}"
@@ -200,7 +216,16 @@ class ChirpStackClient:
             return True, f"Keys for device {dev_eui} created successfully"
             
         except grpc.RpcError as e:
-            error_msg = f"gRPC Error: {e.code()}: {e.details()}"
+            if e.code() == grpc.StatusCode.UNAUTHENTICATED:
+                error_msg = "Authentication failed: API token is invalid. Check API_CODE in Einstellungen."
+            elif e.code() == grpc.StatusCode.PERMISSION_DENIED:
+                error_msg = "Permission denied: API token lacks permission to set device keys."
+            elif e.code() == grpc.StatusCode.NOT_FOUND:
+                error_msg = f"Device {dev_eui} not found in ChirpStack."
+            elif e.code() == grpc.StatusCode.INVALID_ARGUMENT:
+                error_msg = f"Invalid keys format: {e.details()}"
+            else:
+                error_msg = f"gRPC Error [{e.code().name}]: {e.details()}"
             return False, error_msg
         except Exception as e:
             return False, f"Error creating device keys: {str(e)}"
@@ -272,7 +297,14 @@ class ChirpStackClient:
             return True, f"Device {dev_eui} deleted successfully"
             
         except grpc.RpcError as e:
-            error_msg = f"gRPC Error: {e.code()}: {e.details()}"
+            if e.code() == grpc.StatusCode.UNAUTHENTICATED:
+                error_msg = "Authentication failed: API token is invalid. Check API_CODE in Einstellungen."
+            elif e.code() == grpc.StatusCode.PERMISSION_DENIED:
+                error_msg = "Permission denied: API token lacks permission to delete devices."
+            elif e.code() == grpc.StatusCode.NOT_FOUND:
+                error_msg = f"Device {dev_eui} not found (may already be deleted)."
+            else:
+                error_msg = f"gRPC Error [{e.code().name}]: {e.details()}"
             return False, error_msg
         except Exception as e:
             return False, f"Error deleting device: {str(e)}"
@@ -340,7 +372,16 @@ class ChirpStackClient:
             return True, result
             
         except grpc.RpcError as e:
-            error_msg = f"gRPC Error [{e.code().name}]: {e.details()}"
+            if e.code() == grpc.StatusCode.UNAUTHENTICATED:
+                error_msg = "Authentication failed: API token is invalid. Check API_CODE in Einstellungen."
+            elif e.code() == grpc.StatusCode.PERMISSION_DENIED:
+                error_msg = "Permission denied: API token lacks permission to list devices."
+            elif e.code() == grpc.StatusCode.NOT_FOUND:
+                error_msg = f"Application {application_id} not found in ChirpStack."
+            elif e.code() == grpc.StatusCode.INVALID_ARGUMENT:
+                error_msg = f"Invalid application_id format: {e.details()}"
+            else:
+                error_msg = f"gRPC Error [{e.code().name}]: {e.details()}"
             import logging
             logger = logging.getLogger(__name__)
             logger.error(f"gRPC error in list_devices: code={e.code()}, details={e.details()}")
