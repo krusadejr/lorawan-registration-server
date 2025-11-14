@@ -1,15 +1,24 @@
-# Excel File Preview Web Application
+# LoRaWAN Device Registration Web Application
 
-A simple Flask web application that allows users to upload Excel files and preview their contents. Built with Python Flask and Bulma CSS framework.
+A Flask web application for bulk registration of LoRaWAN devices to ChirpStack server using gRPC API.
 
 ## Features
 
-- Upload Excel files (.xlsx, .xls)
-- Preview Excel data in a clean, responsive table
-- Modern UI using Bulma CSS framework
-- Easy to deploy and customize
+- **Multi-Format Support**: Upload Excel (.xlsx, .xls, .xlsm), JSON, or TXT files
+- **Flexible Column Mapping**: Map your file columns to device fields
+- **Per-Device Configuration**: Specify device_profile_id for each device in your file
+- **Bulk Registration**: Register hundreds of devices at once with real-time progress
+- **Device Management**: View, search, and bulk delete existing devices
+- **Modern Dark UI**: Clean, responsive interface with Bulma CSS
+- **Easy Startup**: One-click launch with `start_app.bat`
 
-## Setup Instructions
+## Quick Start
+
+Simply double-click **`start_app.bat`** to launch the application.
+
+The app will be available at `http://localhost:5000`
+
+## Setup Instructions (First Time Only)
 
 ### 1. Create Virtual Environment
 
@@ -19,19 +28,9 @@ python -m venv venv
 
 ### 2. Activate Virtual Environment
 
-**Windows (PowerShell):**
-```powershell
-.\venv\Scripts\Activate.ps1
-```
-
-**Windows (CMD):**
+**Windows:**
 ```cmd
 venv\Scripts\activate.bat
-```
-
-**Linux/Mac:**
-```bash
-source venv/bin/activate
 ```
 
 ### 3. Install Dependencies
@@ -40,20 +39,52 @@ source venv/bin/activate
 pip install -r requirements.txt
 ```
 
-### 4. Run the Application
-
-```bash
-python app.py
-```
-
-The application will be available at `http://localhost:5000`
+After setup, use `start_app.bat` for easy launching!
 
 ## Usage
 
-1. Open your browser and navigate to `http://localhost:5000`
-2. Click on "Choose file" to select an Excel file (.xlsx or .xls)
-3. Click "Upload and Preview" button
-4. View the preview of your Excel data in a table format
+### Basic Workflow
+
+1. **Configure Server** - Enter ChirpStack URL and API key
+2. **Upload File** - Select your Excel/JSON/TXT file with device data
+3. **Map Columns** - Map your file columns to required device fields
+4. **Review & Register** - Preview devices and start bulk registration
+
+### Required Fields in Your File
+
+Your input file must contain these columns:
+- `dev_eui`: Device EUI (16 hex characters, e.g., `0004A30B001A2B3C`)
+- `name`: Device name
+- `application_id`: ChirpStack Application UUID
+- `device_profile_id`: ChirpStack Device Profile UUID (**can be different for each device!**)
+- `nwk_key`: Network key (32 hex characters)
+
+Optional fields:
+- `app_key`: Application key (32 hex characters)
+- `description`: Device description
+
+### 🎯 Per-Device Profile Configuration
+
+**New Feature**: You can now specify a **different device_profile_id for each device** in your file!
+
+This is useful when:
+- Different devices have different LoRaWAN configurations
+- Mixing device types (sensors, actuators, etc.)
+- Using different regional parameters per device
+
+Simply include a `device_profile_id` column in your Excel/JSON file with the appropriate UUID for each device.
+
+### Device Management
+
+Navigate to **Geräteverwaltung** to:
+- List all devices from an application
+- Search and filter devices
+- Bulk delete devices with checkboxes
+- Delete all devices at once
+
+## Example Files
+
+See `exampleDevicesAIGenerated/` folder for sample files showing the correct format.
 
 ## Project Structure
 
