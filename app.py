@@ -83,6 +83,8 @@ def save_server_config():
     api_code = request.form.get('api_code', '').strip()
     tenant_id = request.form.get('tenant_id', '').strip()
     
+    logger.info(f"Saving server config: server_url='{server_url}', api_code_length={len(api_code)}, tenant_id='{tenant_id}'")
+    
     if not any([server_url, api_code, tenant_id]):
         flash('Bitte geben Sie mindestens einen Wert ein', 'danger')
         return redirect(url_for('server_config'))
@@ -92,14 +94,19 @@ def save_server_config():
     if server_url:
         SERVER_URL = server_url
         saved_vars.append('SERVER_URL')
+        logger.info(f"Set SERVER_URL to: {SERVER_URL}")
     
     if api_code:
         API_CODE = api_code
         saved_vars.append('API_CODE')
+        logger.info(f"Set API_CODE (length: {len(API_CODE)})")
     
     if tenant_id:
         TENANT_ID = tenant_id
         saved_vars.append('TENANT_ID')
+        logger.info(f"Set TENANT_ID to: {TENANT_ID}")
+    
+    logger.info(f"Global variables after save: SERVER_URL={SERVER_URL}, API_CODE length={len(API_CODE) if API_CODE else 0}, TENANT_ID={TENANT_ID}")
     
     flash(f'Server-Konfiguration erfolgreich gespeichert: {", ".join(saved_vars)}', 'success')
     
@@ -640,9 +647,13 @@ def register_devices_stream():
             yield f"data: {json.dumps({'status': 'starting', 'total': total, 'current': 0})}\n\n"
             
             # Create gRPC client
+            logger.info(f"Creating gRPC client with SERVER_URL={SERVER_URL}, API_CODE length={len(API_CODE) if API_CODE else 0}")
             from grpc_client import ChirpStackClient
             client = ChirpStackClient(SERVER_URL, API_CODE)
+            
+            logger.info("Attempting to connect to ChirpStack...")
             connected, conn_msg = client.connect()
+            logger.info(f"Connection result: connected={connected}, message={conn_msg}")
             
             if not connected:
                 yield f"data: {json.dumps({'error': f'Connection failed: {conn_msg}'})}\n\n"

@@ -20,10 +20,16 @@ class ChirpStackClient:
             server_url (str): ChirpStack server URL (e.g., 'localhost:8080')
             api_key (str): API key for authentication
         """
+        import logging
+        logger = logging.getLogger(__name__)
+        
         # Clean the server URL - remove http://, https://, and trailing slashes
         self.server_url = self._clean_server_url(server_url)
         # Clean the API key - remove extra whitespace
         self.api_key = api_key.strip() if api_key else ""
+        
+        logger.info(f"ChirpStackClient initialized: server_url='{self.server_url}', api_key_length={len(self.api_key)}, api_key_prefix={'***' + self.api_key[:10] if len(self.api_key) >= 10 else 'TOO_SHORT_OR_EMPTY'}")
+        
         self.channel = None
         self.stub = None
     
@@ -85,7 +91,11 @@ class ChirpStackClient:
     
     def _get_metadata(self):
         """Get authentication metadata for gRPC calls"""
-        return [('authorization', f'Bearer {self.api_key}')]
+        import logging
+        logger = logging.getLogger(__name__)
+        metadata = [('authorization', f'Bearer {self.api_key}')]
+        logger.debug(f"Generated metadata with api_key length: {len(self.api_key)}")
+        return metadata
     
     def _validate_uuid(self, value, field_name):
         """
