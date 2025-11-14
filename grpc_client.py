@@ -64,12 +64,16 @@ class ChirpStackClient:
                 # Set a short timeout to fail fast
                 self.stub.Get(request, metadata=self._get_metadata(), timeout=3.0)
             except grpc.RpcError as e:
+                import logging
+                logger = logging.getLogger(__name__)
+                logger.error(f"Connection test gRPC error: code={e.code()}, details='{e.details()}'")
+                
                 # UNAUTHENTICATED means bad API token - this is a FAILURE
                 if e.code() == grpc.StatusCode.UNAUTHENTICATED:
-                    return False, "Authentication failed: API token is invalid or missing. Check API_CODE in Einstellungen (Settings)."
+                    return False, f"Authentication failed: API token is invalid or missing. ChirpStack says: '{e.details()}'. Check API_CODE in Einstellungen (Settings)."
                 # PERMISSION_DENIED also means auth problem
                 elif e.code() == grpc.StatusCode.PERMISSION_DENIED:
-                    return False, "Permission denied: API token does not have required permissions."
+                    return False, f"Permission denied: API token does not have required permissions. ChirpStack says: '{e.details()}'."
                 # NOT_FOUND or INVALID_ARGUMENT means server is reachable and auth is OK
                 elif e.code() in [grpc.StatusCode.NOT_FOUND, grpc.StatusCode.INVALID_ARGUMENT]:
                     return True, "Connected successfully (server is reachable and authenticated)"
