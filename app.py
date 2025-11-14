@@ -45,7 +45,6 @@ logger.info("="*80)
 SERVER_URL = None               # ChirpStack server URL
 API_CODE = None                 # API key for authentication
 TENANT_ID = None                # Tenant ID
-DEFAULT_DEVICE_PROFILE_ID = None  # Default Device Profile ID (UUID)
 
 
 def allowed_file(filename):
@@ -56,36 +55,35 @@ def allowed_file(filename):
 @app.route('/')
 def index():
     """Home page with file upload form."""
-    global SERVER_URL, API_CODE, TENANT_ID, DEFAULT_DEVICE_PROFILE_ID
+    global SERVER_URL, API_CODE, TENANT_ID
     return render_template('index.html', 
                          server_url=SERVER_URL,
                          api_code=API_CODE,
                          tenant_id=TENANT_ID,
-                         device_profile_id=DEFAULT_DEVICE_PROFILE_ID)
+                         device_profile_id=None)
 
 
 @app.route('/server-config')
 def server_config():
     """Server configuration page."""
-    global SERVER_URL, API_CODE, TENANT_ID, DEFAULT_DEVICE_PROFILE_ID
+    global SERVER_URL, API_CODE, TENANT_ID
     return render_template('server_config.html', 
                          server_url=SERVER_URL, 
                          api_code=API_CODE,
                          tenant_id=TENANT_ID,
-                         device_profile_id=DEFAULT_DEVICE_PROFILE_ID)
+                         device_profile_id=None)
 
 
 @app.route('/save-server-config', methods=['POST'])
 def save_server_config():
     """Save server configuration to global variables."""
-    global SERVER_URL, API_CODE, TENANT_ID, DEFAULT_DEVICE_PROFILE_ID
+    global SERVER_URL, API_CODE, TENANT_ID
     
     server_url = request.form.get('server_url', '').strip()
     api_code = request.form.get('api_code', '').strip()
     tenant_id = request.form.get('tenant_id', '').strip()
-    device_profile_id = request.form.get('device_profile_id', '').strip()
     
-    if not any([server_url, api_code, tenant_id, device_profile_id]):
+    if not any([server_url, api_code, tenant_id]):
         flash('Bitte geben Sie mindestens einen Wert ein', 'danger')
         return redirect(url_for('server_config'))
     
@@ -102,10 +100,6 @@ def save_server_config():
     if tenant_id:
         TENANT_ID = tenant_id
         saved_vars.append('TENANT_ID')
-    
-    if device_profile_id:
-        DEFAULT_DEVICE_PROFILE_ID = device_profile_id
-        saved_vars.append('DEFAULT_DEVICE_PROFILE_ID')
     
     flash(f'Server-Konfiguration erfolgreich gespeichert: {", ".join(saved_vars)}', 'success')
     
@@ -189,16 +183,14 @@ def download_template():
     """Download Excel template with correct column headers."""
     logger.info("Template download requested")
     
-    global DEFAULT_DEVICE_PROFILE_ID
-    
     # Create template DataFrame with example data
     template_data = {
         'dev_eui': ['0004A30B001A2B3C', '0004A30B001A2B3D'],
         'name': ['Example Device 1', 'Example Device 2'],
         'application_id': ['79538b65-4bf1-47cb-80bb-5019090adadb', '79538b65-4bf1-47cb-80bb-5019090adadb'],
         'device_profile_id': [
-            DEFAULT_DEVICE_PROFILE_ID if DEFAULT_DEVICE_PROFILE_ID else '728e257b-1f8e-4826-8929-6dd18adfd97e',
-            DEFAULT_DEVICE_PROFILE_ID if DEFAULT_DEVICE_PROFILE_ID else '728e257b-1f8e-4826-8929-6dd18adfd97e'
+            '728e257b-1f8e-4826-8929-6dd18adfd97e',
+            '728e257b-1f8e-4826-8929-6dd18adfd97e'
         ],
         'nwk_key': ['00112233445566778899AABBCCDDEEF0', 'FFEEDDCCBBAA99887766554433221100'],
         'app_key': ['FFEEDDCCBBAA99887766554433221100', '00112233445566778899AABBCCDDEEF0'],

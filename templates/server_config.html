@@ -78,28 +78,6 @@
                 </div>
 
                 <div class="field">
-                    <label class="label has-text-light">
-                        <i class="fas fa-microchip mr-2"></i>
-                        Default Device Profile ID (UUID)
-                    </label>
-                    <div class="control has-icons-left">
-                        <input 
-                            class="input dark-input" 
-                            type="text" 
-                            name="device_profile_id" 
-                            placeholder="z.B. 728e257b-1f8e-4826-8929-6dd18adfd97e"
-                            value="{% if device_profile_id %}{{ device_profile_id }}{% endif %}">
-                        <span class="icon is-left">
-                            <i class="fas fa-microchip"></i>
-                        </span>
-                    </div>
-                    <p class="help has-text-grey-light">
-                        <i class="fas fa-info-circle"></i>
-                        Standard Device Profile ID (optional). Wird verwendet, wenn die hochgeladene Datei keine <code>device_profile_id</code> Spalte hat.
-                    </p>
-                </div>
-
-                <div class="field">
                     <div class="control">
                         <button class="button is-info is-fullwidth is-medium" type="submit">
                             <span class="icon">
@@ -218,38 +196,6 @@
                         </div>
                     {% endif %}
                 </div>
-
-                <!-- Device Profile ID Status -->
-                <div>
-                    <h3 class="has-text-light">
-                        <i class="fas fa-microchip mr-2"></i>
-                        Default Device Profile ID
-                    </h3>
-                    {% if device_profile_id %}
-                        <div class="notification is-success dark-notification">
-                            <p>
-                                <i class="fas fa-check-circle"></i>
-                                <strong>Konfiguriert</strong>
-                            </p>
-                            <p class="mt-2">
-                                Globale Variable: <code class="has-background-dark has-text-light px-2 py-1">DEFAULT_DEVICE_PROFILE_ID</code>
-                            </p>
-                            <p class="mt-2">
-                                Wert: <code class="has-background-dark has-text-info px-2 py-1">{{ device_profile_id }}</code>
-                            </p>
-                        </div>
-                    {% else %}
-                        <div class="notification is-info dark-notification">
-                            <p>
-                                <i class="fas fa-info-circle"></i>
-                                <strong>Nicht konfiguriert (Optional)</strong>
-                            </p>
-                            <p class="mt-2">
-                                Die globale Variable <code class="has-background-dark has-text-light px-2 py-1">DEFAULT_DEVICE_PROFILE_ID</code> ist leer. Die Device Profile ID muss dann in der hochgeladenen Datei vorhanden sein.
-                            </p>
-                        </div>
-                    {% endif %}
-                </div>
             </div>
         </div>
 
@@ -264,7 +210,7 @@
                     <li>Die ChirpStack Server URL wird in der globalen Variable <code>SERVER_URL</code> gespeichert</li>
                     <li>Der API Key wird in der globalen Variable <code>API_CODE</code> gespeichert</li>
                     <li>Die Tenant ID wird in der globalen Variable <code>TENANT_ID</code> gespeichert</li>
-                    <li>Application ID und Device Profile ID werden aus der hochgeladenen Datei gelesen</li>
+                    <li><strong>Application ID und Device Profile ID werden aus der hochgeladenen Datei gelesen</strong></li>
                     <li>Sie können die Konfiguration jederzeit aktualisieren</li>
                     <li>Die gespeicherten Werte bleiben während der Server-Laufzeit erhalten</li>
                     <li>Bei einem Server-Neustart werden die Werte gelöscht</li>
