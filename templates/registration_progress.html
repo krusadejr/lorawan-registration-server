@@ -82,12 +82,57 @@
                     <strong id="successCount">0</strong> Geräte erfolgreich registriert,
                     <strong id="failedCount">0</strong> fehlgeschlagen
                 </p>
-                <a href="{{ url_for('registration_results') }}" class="button is-success">
-                    <span class="icon">
-                        <i class="fas fa-chart-bar"></i>
-                    </span>
-                    <span>Detaillierte Ergebnisse anzeigen</span>
-                </a>
+            </div>
+
+            <!-- Detailed Results Section (hidden initially) -->
+            <div id="detailedResults" style="display: none;">
+                <!-- Successful Devices -->
+                <div id="successfulDevicesSection" style="display: none;">
+                    <div class="notification is-success dark-notification mb-5">
+                        <h3 class="subtitle is-5 has-text-light">
+                            <i class="fas fa-check-circle"></i>
+                            Erfolgreich registrierte Geräte (<span id="successfulCount">0</span>)
+                        </h3>
+                        <div class="table-container" style="max-height: 400px; overflow-y: auto;">
+                            <table style="width: 100%; background-color: white; border-collapse: collapse;">
+                                <thead>
+                                    <tr style="background-color: white;">
+                                        <th style="padding: 8px; text-align: left; border: 1px solid #ddd; color: black;">#</th>
+                                        <th style="padding: 8px; text-align: left; border: 1px solid #ddd; color: black;">Device EUI</th>
+                                        <th style="padding: 8px; text-align: left; border: 1px solid #ddd; color: black;">Name</th>
+                                        <th style="padding: 8px; text-align: left; border: 1px solid #ddd; color: black;">Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="successfulDevicesBody">
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Failed Devices -->
+                <div id="failedDevicesSection" style="display: none;">
+                    <div class="notification is-danger dark-notification mb-5">
+                        <h3 class="subtitle is-5 has-text-light">
+                            <i class="fas fa-times-circle"></i>
+                            Fehlgeschlagene Registrierungen (<span id="failedCountDetail">0</span>)
+                        </h3>
+                        <div class="table-container" style="max-height: 400px; overflow-y: auto;">
+                            <table style="width: 100%; background-color: white; border-collapse: collapse;">
+                                <thead>
+                                    <tr style="background-color: white;">
+                                        <th style="padding: 8px; text-align: left; border: 1px solid #ddd; color: black;">#</th>
+                                        <th style="padding: 8px; text-align: left; border: 1px solid #ddd; color: black;">Device EUI</th>
+                                        <th style="padding: 8px; text-align: left; border: 1px solid #ddd; color: black;">Name</th>
+                                        <th style="padding: 8px; text-align: left; border: 1px solid #ddd; color: black;">Fehler</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="failedDevicesBody">
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <!-- Error Message (hidden initially) -->
@@ -169,6 +214,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const errorText = document.getElementById('errorText');
     const successCount = document.getElementById('successCount');
     const failedCount = document.getElementById('failedCount');
+    
+    // Arrays to store detailed results
+    let successfulDevices = [];
+    let failedDevices = [];
     
     // Get duplicate action from form
     const duplicateAction = '{{ duplicate_action }}' || 'skip';
@@ -267,6 +316,22 @@ document.addEventListener('DOMContentLoaded', () => {
             currentDeviceStatus.className = `tag is-light is-large ${statusClass}`;
             currentDeviceStatus.innerHTML = `<i class="fas ${statusIcon} mr-2"></i>${statusText}`;
             
+            // Store device results
+            if (data.result === 'success' || data.result === 'warning') {
+                successfulDevices.push({
+                    dev_eui: data.dev_eui || 'N/A',
+                    name: data.device,
+                    status: data.message,
+                    warning: data.result === 'warning'
+                });
+            } else if (data.result === 'failed') {
+                failedDevices.push({
+                    dev_eui: data.dev_eui || 'N/A',
+                    name: data.device,
+                    error: data.message
+                });
+            }
+            
             // Add to activity log
             const activityClass = `activity-${data.result}`;
             const activityItem = document.createElement('div');
@@ -295,6 +360,64 @@ document.addEventListener('DOMContentLoaded', () => {
             successCount.textContent = data.successful;
             failedCount.textContent = data.failed;
             completionMessage.style.display = 'block';
+            
+            // Display detailed results inline
+            displayDetailedResults();
+        }
+    }
+    
+    function displayDetailedResults() {
+        const detailedResults = document.getElementById('detailedResults');
+        const successfulSection = document.getElementById('successfulDevicesSection');
+        const failedSection = document.getElementById('failedDevicesSection');
+        const successfulBody = document.getElementById('successfulDevicesBody');
+        const failedBody = document.getElementById('failedDevicesBody');
+        const successfulCountElem = document.getElementById('successfulCount');
+        const failedCountDetailElem = document.getElementById('failedCountDetail');
+        
+        detailedResults.style.display = 'block';
+        
+        // Display successful devices
+        if (successfulDevices.length > 0) {
+            successfulCountElem.textContent = successfulDevices.length;
+            successfulSection.style.display = 'block';
+            
+            successfulDevices.forEach((device, index) => {
+                const row = document.createElement('tr');
+                row.style.backgroundColor = 'white';
+                row.innerHTML = `
+                    <td style="padding: 8px; border: 1px solid #ddd; color: black;">${index + 1}</td>
+                    <td style="padding: 8px; border: 1px solid #ddd; color: black;"><code>${device.dev_eui}</code></td>
+                    <td style="padding: 8px; border: 1px solid #ddd; color: black;">${device.name}</td>
+                    <td style="padding: 8px; border: 1px solid #ddd; color: black;">
+                        ${device.warning ? 
+                            `<span class="tag is-warning"><i class="fas fa-exclamation-triangle mr-1"></i>${device.status}</span>` : 
+                            `<span class="tag is-success"><i class="fas fa-check mr-1"></i>${device.status}</span>`
+                        }
+                    </td>
+                `;
+                successfulBody.appendChild(row);
+            });
+        }
+        
+        // Display failed devices
+        if (failedDevices.length > 0) {
+            failedCountDetailElem.textContent = failedDevices.length;
+            failedSection.style.display = 'block';
+            
+            failedDevices.forEach((device, index) => {
+                const row = document.createElement('tr');
+                row.style.backgroundColor = 'white';
+                row.innerHTML = `
+                    <td style="padding: 8px; border: 1px solid #ddd; color: black;">${index + 1}</td>
+                    <td style="padding: 8px; border: 1px solid #ddd; color: black;"><code>${device.dev_eui}</code></td>
+                    <td style="padding: 8px; border: 1px solid #ddd; color: black;">${device.name}</td>
+                    <td style="padding: 8px; border: 1px solid #ddd; color: black;">
+                        <span class="tag is-danger">${device.error}</span>
+                    </td>
+                `;
+                failedBody.appendChild(row);
+            });
         }
     }
 });

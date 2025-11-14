@@ -688,7 +688,7 @@ def register_devices_stream():
                             'name': device['name'],
                             'error': create_msg
                         })
-                        yield f"data: {json.dumps({'status': 'processing', 'current': idx, 'total': total, 'device': device['name'], 'result': 'failed', 'message': create_msg[:50]})}\n\n"
+                        yield f"data: {json.dumps({'status': 'processing', 'current': idx, 'total': total, 'device': device['name'], 'dev_eui': device['dev_eui'], 'result': 'failed', 'message': create_msg[:50]})}\n\n"
                         continue
                     
                     # Set device keys
@@ -704,13 +704,13 @@ def register_devices_stream():
                             'name': device['name'],
                             'warning': f'Device created but keys not set: {keys_msg}'
                         })
-                        yield f"data: {json.dumps({'status': 'processing', 'current': idx, 'total': total, 'device': device['name'], 'result': 'warning', 'message': 'Keys nicht gesetzt'})}\n\n"
+                        yield f"data: {json.dumps({'status': 'processing', 'current': idx, 'total': total, 'device': device['name'], 'dev_eui': device['dev_eui'], 'result': 'warning', 'message': 'Keys nicht gesetzt'})}\n\n"
                     else:
                         results['successful'].append({
                             'dev_eui': device['dev_eui'],
                             'name': device['name']
                         })
-                        yield f"data: {json.dumps({'status': 'processing', 'current': idx, 'total': total, 'device': device['name'], 'result': 'success', 'message': 'Erfolgreich'})}\n\n"
+                        yield f"data: {json.dumps({'status': 'processing', 'current': idx, 'total': total, 'device': device['name'], 'dev_eui': device['dev_eui'], 'result': 'success', 'message': 'Erfolgreich'})}\n\n"
                 
                 except Exception as e:
                     results['failed'].append({
@@ -718,7 +718,7 @@ def register_devices_stream():
                         'name': device['name'],
                         'error': str(e)
                     })
-                    yield f"data: {json.dumps({'status': 'processing', 'current': idx, 'total': total, 'device': device['name'], 'result': 'failed', 'message': str(e)[:50]})}\n\n"
+                    yield f"data: {json.dumps({'status': 'processing', 'current': idx, 'total': total, 'device': device['name'], 'dev_eui': device.get('dev_eui', 'N/A'), 'result': 'failed', 'message': str(e)[:50]})}\n\n"
             
             # Store results in session
             session['registration_results'] = results
