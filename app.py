@@ -586,6 +586,11 @@ def register_devices_stream():
     def generate():
         """Generator function for Server-Sent Events"""
         try:
+            # Check if server is configured
+            if not SERVER_URL or not API_CODE or not TENANT_ID:
+                yield f"data: {json.dumps({'error': 'Server nicht konfiguriert. Bitte gehen Sie zu Einstellungen und konfigurieren Sie SERVER_URL, API_CODE und TENANT_ID.'})}\n\n"
+                return
+            
             # Get duplicate action from session (set in start_registration)
             duplicate_action = session.get('duplicate_action', 'skip')
             logger.info(f"Streaming registration with duplicate_action: {duplicate_action}")
