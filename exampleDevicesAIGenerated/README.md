@@ -17,7 +17,13 @@ This folder contains sample LoRaWAN device data files for testing the bulk regis
   - `app_key`: Application key (32 hex characters)
   - `description`: Device description
 
-### 2. `sample_devices.txt` - JSON Lines Format
+### 2. `test_devices_*.xlsx` - Test Files with Timestamps
+- **Purpose**: Test files created for specific testing sessions
+- **Naming**: `test_devices_YYYYMMDD_HHMMSS.xlsx`
+- **Format**: Same structure as sample_devices.xlsx
+- **Note**: These files include the required `device_profile_id` column and are ready for testing
+
+### 3. `sample_devices.txt` - JSON Lines Format
 - **Format**: Text file with one JSON object per line
 - **Devices**: 5 sample devices
 - **Structure**: Each line is a complete JSON object with all device fields
