@@ -587,8 +587,18 @@ def register_devices_stream():
         """Generator function for Server-Sent Events"""
         try:
             # Check if server is configured
+            logger.info(f"Registration stream started. SERVER_URL={SERVER_URL}, API_CODE={'SET' if API_CODE else 'NOT SET'}, TENANT_ID={TENANT_ID}")
+            
             if not SERVER_URL or not API_CODE or not TENANT_ID:
-                yield f"data: {json.dumps({'error': 'Server nicht konfiguriert. Bitte gehen Sie zu Einstellungen und konfigurieren Sie SERVER_URL, API_CODE und TENANT_ID.'})}\n\n"
+                error_msg = 'Server nicht konfiguriert! Bitte gehen Sie zu "Einstellungen" und konfigurieren Sie:\n'
+                if not SERVER_URL:
+                    error_msg += '- SERVER_URL (z.B. localhost:8080)\n'
+                if not API_CODE:
+                    error_msg += '- API_CODE (ChirpStack API Token)\n'
+                if not TENANT_ID:
+                    error_msg += '- TENANT_ID\n'
+                logger.error(f"Server configuration missing: {error_msg}")
+                yield f"data: {json.dumps({'error': error_msg})}\n\n"
                 return
             
             # Get duplicate action from session (set in start_registration)
