@@ -50,22 +50,22 @@
                     Erfolgreich registrierte Geräte ({{ results.successful|length }})
                 </h3>
                 <div class="table-container" style="max-height: 400px; overflow-y: auto;">
-                    <table class="table is-fullwidth is-striped is-hoverable">
+                    <table style="width: 100%; background-color: white; border-collapse: collapse;">
                         <thead>
-                            <tr>
-                                <th>#</th>
-                                <th>Device EUI</th>
-                                <th>Name</th>
-                                <th>Status</th>
+                            <tr style="background-color: white;">
+                                <th style="padding: 8px; text-align: left; border: 1px solid #ddd; color: black;">#</th>
+                                <th style="padding: 8px; text-align: left; border: 1px solid #ddd; color: black;">Device EUI</th>
+                                <th style="padding: 8px; text-align: left; border: 1px solid #ddd; color: black;">Name</th>
+                                <th style="padding: 8px; text-align: left; border: 1px solid #ddd; color: black;">Status</th>
                             </tr>
                         </thead>
                         <tbody>
                             {% for device in results.successful %}
-                            <tr>
-                                <td>{{ loop.index }}</td>
-                                <td><code>{{ device.dev_eui }}</code></td>
-                                <td>{{ device.name }}</td>
-                                <td>
+                            <tr style="background-color: white;">
+                                <td style="padding: 8px; border: 1px solid #ddd; color: black;">{{ loop.index }}</td>
+                                <td style="padding: 8px; border: 1px solid #ddd; color: black;"><code>{{ device.dev_eui }}</code></td>
+                                <td style="padding: 8px; border: 1px solid #ddd; color: black;">{{ device.name }}</td>
+                                <td style="padding: 8px; border: 1px solid #ddd; color: black;">
                                     {% if device.warning %}
                                         <span class="tag is-warning">
                                             <i class="fas fa-exclamation-triangle mr-1"></i>
@@ -94,22 +94,22 @@
                     Fehlgeschlagene Registrierungen ({{ results.failed|length }})
                 </h3>
                 <div class="table-container" style="max-height: 400px; overflow-y: auto;">
-                    <table class="table is-fullwidth is-striped is-hoverable">
+                    <table style="width: 100%; background-color: white; border-collapse: collapse;">
                         <thead>
-                            <tr>
-                                <th>#</th>
-                                <th>Device EUI</th>
-                                <th>Name</th>
-                                <th>Fehler</th>
+                            <tr style="background-color: white;">
+                                <th style="padding: 8px; text-align: left; border: 1px solid #ddd; color: black;">#</th>
+                                <th style="padding: 8px; text-align: left; border: 1px solid #ddd; color: black;">Device EUI</th>
+                                <th style="padding: 8px; text-align: left; border: 1px solid #ddd; color: black;">Name</th>
+                                <th style="padding: 8px; text-align: left; border: 1px solid #ddd; color: black;">Fehler</th>
                             </tr>
                         </thead>
                         <tbody>
                             {% for device in results.failed %}
-                            <tr>
-                                <td>{{ loop.index }}</td>
-                                <td><code>{{ device.dev_eui }}</code></td>
-                                <td>{{ device.name }}</td>
-                                <td><span class="tag is-danger">{{ device.error }}</span></td>
+                            <tr style="background-color: white;">
+                                <td style="padding: 8px; border: 1px solid #ddd; color: black;">{{ loop.index }}</td>
+                                <td style="padding: 8px; border: 1px solid #ddd; color: black;"><code>{{ device.dev_eui }}</code></td>
+                                <td style="padding: 8px; border: 1px solid #ddd; color: black;">{{ device.name }}</td>
+                                <td style="padding: 8px; border: 1px solid #ddd; color: black;"><span class="tag is-danger">{{ device.error }}</span></td>
                             </tr>
                             {% endfor %}
                         </tbody>
