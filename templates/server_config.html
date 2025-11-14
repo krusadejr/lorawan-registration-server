@@ -25,7 +25,7 @@
                             class="input dark-input" 
                             type="text" 
                             name="server_url" 
-                            placeholder="z.B. http://localhost:8080"
+                            placeholder="z.B. localhost:8090"
                             value="{% if server_url %}{{ server_url }}{% endif %}">
                         <span class="icon is-left">
                             <i class="fas fa-network-wired"></i>
@@ -33,7 +33,7 @@
                     </div>
                     <p class="help has-text-grey-light">
                         <i class="fas fa-info-circle"></i>
-                        Die ChirpStack gRPC Server-Adresse wird in der globalen Variable <strong>SERVER_URL</strong> gespeichert
+                        <strong>WICHTIG:</strong> Verwenden Sie <strong>localhost:8090</strong> für die gRPC API (nicht 8080 für Web UI!)
                     </p>
                 </div>
 
