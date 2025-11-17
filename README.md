@@ -4,6 +4,26 @@
 
 A Flask web application for bulk registration of LoRaWAN devices to ChirpStack server using gRPC API.
 
+## 🚀 Standalone Executable Available!
+
+**No Python installation required!** Download the ready-to-use Windows executable from the [Releases](https://github.com/krusadejr/lorawan-registration-server/releases) page.
+
+### For End Users (No Python Required)
+
+1. Download `LoRaWAN_Device_Registration.zip` from the latest release
+2. Extract the zip file to any folder
+3. Run `START_APPLICATION.bat` or `LoRaWAN_Device_Registration.exe`
+4. Open browser to `http://localhost:5000`
+5. Configure ChirpStack settings and start registering devices!
+
+**Note**: First startup may take 10-15 seconds. Your antivirus might flag it initially (false positive - safe to allow).
+
+### For Developers
+
+If you want to run from source code or contribute to development, see the [Setup Instructions](#setup-instructions-first-time-only) below.
+
+---
+
 ## Features
 
 - **Multi-Format Support**: Upload Excel (.xlsx, .xls, .xlsm), JSON, or TXT files
@@ -215,6 +235,26 @@ This project is for internal use and device management with ChirpStack LoRaWAN N
 ## LoRaWAN Geräteregistrierungs-Webanwendung
 
 Eine Flask-Webanwendung zur Massenregistrierung von LoRaWAN-Geräten auf einem ChirpStack-Server über die gRPC-API.
+
+## 🚀 Eigenständige Exe-Datei verfügbar!
+
+**Keine Python-Installation erforderlich!** Laden Sie die gebrauchsfertige Windows-Anwendung von der [Releases](https://github.com/krusadejr/lorawan-registration-server/releases)-Seite herunter.
+
+### Für Endbenutzer (keine Python-Installation erforderlich)
+
+1. Laden Sie `LoRaWAN_Device_Registration.zip` vom neuesten Release herunter
+2. Entpacken Sie die ZIP-Datei in einen beliebigen Ordner
+3. Führen Sie `START_APPLICATION.bat` oder `LoRaWAN_Device_Registration.exe` aus
+4. Öffnen Sie den Browser unter `http://localhost:5000`
+5. Konfigurieren Sie die ChirpStack-Einstellungen und beginnen Sie mit der Geräteregistrierung!
+
+**Hinweis**: Der erste Start kann 10-15 Sekunden dauern. Ihr Antivirusprogramm könnte es anfangs markieren (Fehlalarm - sicher zu erlauben).
+
+### Für Entwickler
+
+Wenn Sie aus dem Quellcode ausführen oder zur Entwicklung beitragen möchten, siehe die [Einrichtungsanleitung](#einrichtungsanleitung-nur-beim-ersten-mal) unten.
+
+---
 
 ## Funktionen
 

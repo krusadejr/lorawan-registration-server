@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="de" class="has-navbar-fixed-top">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Excel-Datei Vorschau{% endblock %}</title>
+    
+    <!-- Favicons -->
+    <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='favicon/favicon.ico') }}">
+    <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='favicon/favicon-32x32.png') }}">
+    <link rel="icon" type="image/png" sizes="16x16" href="{{ url_for('static', filename='favicon/favicon-16x16.png') }}">
+    <link rel="apple-touch-icon" sizes="180x180" href="{{ url_for('static', filename='favicon/apple-touch-icon.png') }}">
+    
+    <!-- Bulma CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.4/css/bulma.min.css">
+    
+    <!-- Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body class="dark-mode">
+    <!-- Navigation Bar -->
+    <nav class="navbar is-dark is-fixed-top" role="navigation" aria-label="Hauptnavigation">
+        <div class="container">
+            <div class="navbar-brand">
+                <a class="navbar-item" href="{{ url_for('index') }}">
+                    <i class="fas fa-broadcast-tower mr-2"></i>
+                    <strong>LoRaWAN Device Registration</strong>
+                </a>
+            </div>
+            <div class="navbar-menu">
+                <div class="navbar-start">
+                    <a class="navbar-item" href="{{ url_for('server_config') }}">
+                        <i class="fas fa-server mr-2"></i>
+                        Server-Konfiguration
+                    </a>
+                    <a class="navbar-item" href="{{ url_for('test_connection') }}">
+                        <i class="fas fa-plug mr-2"></i>
+                        Verbindung testen
+                    </a>
+                    <a class="navbar-item" href="{{ url_for('device_management') }}">
+                        <i class="fas fa-cogs mr-2"></i>
+                        Geräteverwaltung
+                    </a>
+                    <a class="navbar-item" href="{{ url_for('help_page') }}">
+                        <i class="fas fa-question-circle mr-2"></i>
+                        Hilfe
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <section class="section">
+        <div class="container">
+            <!-- Flash Messages -->
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="notification is-{{ category }} is-light">
+                            <button class="delete"></button>
+                            {{ message }}
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+
+            <!-- Page Content -->
+            {% block content %}{% endblock %}
+        </div>
+    </section>
+
+    <!-- JavaScript for notifications -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // Close notification
+            (document.querySelectorAll('.notification .delete') || []).forEach(($delete) => {
+                const $notification = $delete.parentNode;
+                $delete.addEventListener('click', () => {
+                    $notification.parentNode.removeChild($notification);
+                });
+            });
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,244 @@
+{% extends "base.html" %}
+
+{% block title %}LoRaWAN Device Registration{% endblock %}
+
+{% block content %}
+<div class="columns is-centered">
+    <div class="column is-two-thirds">
+        
+        <!-- Main Heading -->
+        <div class="has-text-centered mb-6">
+            <h1 class="title is-2 has-text-light mb-2">
+                <i class="fas fa-broadcast-tower mr-3"></i>
+                Bulk-LoRaWAN Geräte Registrierung
+            </h1>
+        </div>
+        
+        <!-- Flash Messages -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                <div class="notification is-{{ category }} dark-notification">
+                    <button class="delete"></button>
+                    {{ message }}
+                </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <!-- Server Configuration Status -->
+        <div class="box dark-box mb-5">
+            <h2 class="title is-4 has-text-light">
+                <i class="fas fa-server"></i>
+                Server-Konfiguration
+            </h2>
+            
+            {% if server_url and api_code and tenant_id %}
+                <div class="notification is-success dark-notification">
+                    <p class="mb-2">
+                        <i class="fas fa-check-circle"></i>
+                        <strong>Server konfiguriert und bereit!</strong>
+                    </p>
+                    <div class="content has-text-light is-small">
+                        <ul class="mb-2">
+                            <li>Server: <code>{{ server_url }}</code></li>
+                            <li>Tenant ID: <code>{{ tenant_id }}</code></li>
+                            <li>API Key: <code>****{{ api_code[-4:] if api_code|length > 4 else '****' }}</code></li>
+                        </ul>
+                    </div>
+                    <div class="buttons">
+                        <a href="{{ url_for('test_connection') }}" class="button is-info">
+                            <span class="icon">
+                                <i class="fas fa-plug"></i>
+                            </span>
+                            <span>Verbindung zu ChirpStack testen</span>
+                        </a>
+                        <a href="{{ url_for('server_config') }}" class="button is-light">
+                            <span class="icon">
+                                <i class="fas fa-edit"></i>
+                            </span>
+                            <span>Konfiguration ändern</span>
+                        </a>
+                    </div>
+                </div>
+            {% else %}
+                <div class="notification is-warning dark-notification">
+                    <p class="mb-3">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <strong>Server noch nicht konfiguriert</strong>
+                    </p>
+                    <p class="mb-3">Bitte konfigurieren Sie zuerst die Server-Verbindung, bevor Sie Geräte registrieren.</p>
+                    <div class="buttons">
+                        <a href="{{ url_for('server_config') }}" class="button is-warning">
+                            <span class="icon">
+                                <i class="fas fa-cog"></i>
+                            </span>
+                            <span>Server jetzt konfigurieren</span>
+                        </a>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+
+        <!-- Upload Section -->
+        <div class="box dark-box">
+            <h1 class="title is-3 has-text-centered has-text-light">
+                <i class="fas fa-cloud-upload-alt"></i>
+                Geräte-Datei hochladen
+            </h1>
+            <p class="subtitle is-6 has-text-centered has-text-grey-light">
+                Laden Sie eine Datei mit LoRaWAN-Gerätedaten hoch
+            </p>
+
+            <!-- Template Download Button -->
+            <div class="notification is-info dark-notification mb-4">
+                <div class="columns is-vcentered">
+                    <div class="column">
+                        <p class="has-text-light">
+                            <i class="fas fa-download mr-2"></i>
+                            <strong>Keine Datei?</strong> Laden Sie eine Vorlage herunter und füllen Sie sie mit Ihren Gerätedaten aus.
+                        </p>
+                    </div>
+                    <div class="column is-narrow">
+                        <a href="{{ url_for('download_template') }}" class="button is-info">
+                            <span class="icon">
+                                <i class="fas fa-file-download"></i>
+                            </span>
+                            <span>Vorlage herunterladen</span>
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <form method="POST" action="{{ url_for('upload_file') }}" enctype="multipart/form-data">
+                <div class="field">
+                    <label class="label has-text-light">
+                        <i class="fas fa-file mr-2"></i>
+                        Datei mit Gerätedaten
+                    </label>
+                    <div class="control">
+                        <div class="file has-name is-fullwidth is-info">
+                            <label class="file-label">
+                                <input class="file-input" type="file" name="file" accept=".xlsx,.xls,.xlsm,.txt,.json" id="fileInput" required>
+                                <span class="file-cta">
+                                    <span class="file-icon">
+                                        <i class="fas fa-upload"></i>
+                                    </span>
+                                    <span class="file-label">
+                                        Datei auswählen…
+                                    </span>
+                                </span>
+                                <span class="file-name" id="fileName">
+                                    Keine Datei ausgewählt
+                                </span>
+                            </label>
+                        </div>
+                    </div>
+                    <p class="help has-text-grey-light">
+                        <i class="fas fa-info-circle"></i>
+                        Akzeptierte Formate: Excel (.xlsx, .xls, .xlsm), Text (.txt), JSON (.json) | Max. Größe: 16MB
+                    </p>
+                </div>
+
+                <div class="field">
+                    <div class="control">
+                        <button class="button is-primary is-fullwidth is-medium" type="submit">
+                            <span class="icon">
+                                <i class="fas fa-arrow-right"></i>
+                            </span>
+                            <span>Weiter zum Registrieren</span>
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<style>
+.timeline {
+    position: relative;
+    padding-left: 3rem;
+}
+
+.timeline-item {
+    position: relative;
+    padding-bottom: 2rem;
+}
+
+.timeline-item:not(:last-child):before {
+    content: '';
+    position: absolute;
+    left: -2.4rem;
+    top: 2.5rem;
+    width: 2px;
+    height: calc(100% - 2rem);
+    background-color: #4a4a4a;
+}
+
+.timeline-marker {
+    position: absolute;
+    left: -3rem;
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    color: white;
+}
+
+.timeline-marker.is-success {
+    background-color: #48c774;
+}
+
+.timeline-marker.is-info {
+    background-color: #3298dc;
+}
+
+.timeline-marker.is-warning {
+    background-color: #ffdd57;
+    color: #363636;
+}
+
+.timeline-item.is-complete .timeline-content {
+    opacity: 0.7;
+}
+
+.timeline-content {
+    padding-left: 1rem;
+}
+
+.timeline-content .heading {
+    color: #b5b5b5;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    margin-bottom: 0.25rem;
+}
+</style>
+
+<script>
+    // Update filename display when file is selected
+    const fileInput = document.getElementById('fileInput');
+    const fileName = document.getElementById('fileName');
+    
+    fileInput.addEventListener('change', () => {
+        if (fileInput.files.length > 0) {
+            fileName.textContent = fileInput.files[0].name;
+        } else {
+            fileName.textContent = 'Keine Datei ausgewählt';
+        }
+    });
+
+    // Handle notification close buttons
+    document.addEventListener('DOMContentLoaded', () => {
+        (document.querySelectorAll('.notification .delete') || []).forEach(($delete) => {
+            const $notification = $delete.parentNode;
+            $delete.addEventListener('click', () => {
+                $notification.parentNode.removeChild($notification);
+            });
+        });
+    });
+</script>
+{% endblock %}

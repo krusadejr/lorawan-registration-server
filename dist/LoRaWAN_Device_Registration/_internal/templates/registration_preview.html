@@ -1,0 +1,210 @@
+{% extends "base.html" %}
+
+{% block title %}Registrierung - Vorschau{% endblock %}
+
+{% block content %}
+<div class="columns is-centered">
+    <div class="column is-four-fifths">
+        <!-- Flash Messages -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                <div class="notification is-{{ category }} dark-notification">
+                    <button class="delete"></button>
+                    {{ message }}
+                </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <div class="box dark-box">
+            <h1 class="title is-3 has-text-light">
+                <i class="fas fa-clipboard-check"></i>
+                Registrierung - Vorschau & Bestätigung
+            </h1>
+            <p class="subtitle is-6 has-text-grey-light">
+                Überprüfen Sie die Daten vor der Registrierung bei ChirpStack
+            </p>
+
+            <!-- Summary Box -->
+            <div class="notification is-info dark-notification mb-5">
+                <div class="columns">
+                    <div class="column">
+                        <p><strong><i class="fas fa-file mr-2"></i>Datei:</strong> {{ filename }}</p>
+                    </div>
+                    <div class="column">
+                        <p><strong><i class="fas fa-microchip mr-2"></i>Anzahl Geräte:</strong> {{ device_count }}</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Server Configuration Check -->
+            {% if server_configured %}
+                <div class="notification is-success dark-notification mb-5">
+                    <h3 class="subtitle is-5 has-text-light">
+                        <i class="fas fa-check-circle"></i>
+                        Server-Konfiguration
+                    </h3>
+                    <div class="content has-text-light">
+                        <ul>
+                            <li><strong>Server URL:</strong> <code>{{ server_url }}</code></li>
+                            <li><strong>Tenant ID:</strong> <code>{{ tenant_id }}</code></li>
+                            <li><strong>API Key:</strong> <code>✓ Konfiguriert</code></li>
+                        </ul>
+                    </div>
+                </div>
+            {% else %}
+                <div class="notification is-danger dark-notification mb-5">
+                    <h3 class="subtitle is-5 has-text-light">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        Server nicht konfiguriert!
+                    </h3>
+                    <p class="mb-3">Bitte konfigurieren Sie zuerst die Server-Verbindung.</p>
+                    <a href="{{ url_for('server_config') }}" class="button is-danger">
+                        <span class="icon">
+                            <i class="fas fa-cog"></i>
+                        </span>
+                        <span>Server jetzt konfigurieren</span>
+                    </a>
+                </div>
+            {% endif %}
+
+            <!-- Device Preview -->
+            <div class="notification is-dark mb-5">
+                <h3 class="subtitle is-5 has-text-light">
+                    <i class="fas fa-eye"></i>
+                    Geräte-Vorschau (erste 10 Geräte)
+                </h3>
+                <div class="table-container" style="max-height: 500px; overflow-y: auto;">
+                    {{ preview_html|safe }}
+                </div>
+                {% if device_count > 10 %}
+                    <p class="help has-text-grey-light mt-3">
+                        <i class="fas fa-info-circle"></i>
+                        Zeige 10 von {{ device_count }} Geräten. Alle Geräte werden registriert.
+                    </p>
+                {% endif %}
+            </div>
+
+            <!-- Registration Warning -->
+            <div class="notification is-warning dark-notification mb-5">
+                <h3 class="subtitle is-5 has-text-dark">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    Wichtige Hinweise
+                </h3>
+                <div class="content has-text-dark">
+                    <ul>
+                        <li>Die Registrierung erstellt <strong>{{ device_count }} Geräte</strong> in ChirpStack</li>
+                        <li>Stellen Sie sicher, dass die Application ID und Device Profile ID existieren</li>
+                        <li>DevEUIs müssen eindeutig sein (keine Duplikate)</li>
+                        <li>Der Prozess kann nicht rückgängig gemacht werden</li>
+                        <li>Bei Fehlern werden Details im Log gespeichert</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <form method="POST" action="{{ url_for('start_registration') }}" id="registrationForm">
+                <!-- Duplicate Handling Options -->
+                <div class="box" style="background-color: #1a1a2e; border: 1px solid #3273dc; margin-bottom: 1.5rem;">
+                    <h3 class="subtitle is-5 has-text-light">
+                        <i class="fas fa-copy"></i>
+                        Duplikat-Behandlung
+                    </h3>
+                    <p class="has-text-grey-light mb-3">Was soll passieren, wenn ein Gerät bereits existiert?</p>
+                    <div class="field">
+                        <div class="control">
+                            <label class="radio has-text-light">
+                                <input type="radio" name="duplicate_action" value="skip" checked>
+                                <strong>Überspringen</strong> - Gerät nicht registrieren, Fehler anzeigen (empfohlen)
+                            </label>
+                        </div>
+                        <div class="control">
+                            <label class="radio has-text-light">
+                                <input type="radio" name="duplicate_action" value="replace">
+                                <strong>Ersetzen</strong> - Vorhandenes Gerät löschen und neu registrieren
+                            </label>
+                        </div>
+                    </div>
+                    <p class="help has-text-grey-light">
+                        <i class="fas fa-info-circle"></i>
+                        Bei "Überspringen" werden existierende Geräte ignoriert. Bei "Ersetzen" werden sie gelöscht und mit den neuen Daten neu erstellt.
+                    </p>
+                </div>
+                
+                <div class="field is-grouped is-grouped-centered">
+                    <div class="control">
+                        <a href="{{ url_for('index') }}" class="button is-light is-large">
+                            <span class="icon">
+                                <i class="fas fa-times"></i>
+                            </span>
+                            <span>Abbrechen</span>
+                        </a>
+                    </div>
+                    <div class="control">
+                        {% if server_configured %}
+                            <button type="submit" class="button is-success is-large" id="registerBtn">
+                                <span class="icon">
+                                    <i class="fas fa-rocket"></i>
+                                </span>
+                                <span>{{ device_count }} Geräte jetzt registrieren</span>
+                            </button>
+                        {% else %}
+                            <button type="button" class="button is-success is-large" disabled>
+                                <span class="icon">
+                                    <i class="fas fa-rocket"></i>
+                                </span>
+                                <span>Registrierung (Server nicht konfiguriert)</span>
+                            </button>
+                        {% endif %}
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <!-- Progress Info -->
+        <div class="notification is-info dark-notification">
+            <h3 class="subtitle is-5 has-text-light">
+                <i class="fas fa-info-circle"></i>
+                Was passiert bei der Registrierung?
+            </h3>
+            <div class="content has-text-light">
+                <ol>
+                    <li><strong>Verbindung aufbauen</strong> - Verbindung zum ChirpStack gRPC Server herstellen</li>
+                    <li><strong>Validierung</strong> - DevEUIs und Keys auf korrektes Format prüfen</li>
+                    <li><strong>Geräte erstellen</strong> - Jedes Gerät via gRPC API in ChirpStack registrieren</li>
+                    <li><strong>Keys setzen</strong> - Network Key und App Key (falls vorhanden) zuweisen</li>
+                    <li><strong>Ergebnis anzeigen</strong> - Erfolgreiche und fehlgeschlagene Registrierungen anzeigen</li>
+                </ol>
+                <p class="mt-3">
+                    <i class="fas fa-clock"></i>
+                    <strong>Geschätzte Dauer:</strong> ~{{ (device_count * 0.5)|round(1) }} Sekunden für {{ device_count }} Geräte
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Handle notification close buttons
+    document.addEventListener('DOMContentLoaded', () => {
+        (document.querySelectorAll('.notification .delete') || []).forEach(($delete) => {
+            const $notification = $delete.parentNode;
+            $delete.addEventListener('click', () => {
+                $notification.parentNode.removeChild($notification);
+            });
+        });
+
+        // Add confirmation dialog
+        const registerBtn = document.getElementById('registerBtn');
+        if (registerBtn) {
+            registerBtn.addEventListener('click', (e) => {
+                const deviceCount = {{ device_count }};
+                if (!confirm(`Sind Sie sicher, dass Sie ${deviceCount} Geräte registrieren möchten?\n\nDieser Vorgang kann nicht rückgängig gemacht werden.`)) {
+                    e.preventDefault();
+                }
+            });
+        }
+    });
+</script>
+{% endblock %}

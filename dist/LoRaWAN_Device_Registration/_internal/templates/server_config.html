@@ -1,0 +1,218 @@
+{% extends "base.html" %}
+
+{% block title %}Server-Konfiguration{% endblock %}
+
+{% block content %}
+<div class="columns is-centered">
+    <div class="column is-two-thirds">
+        <div class="box dark-box">
+            <h1 class="title is-3 has-text-centered has-text-light">
+                <i class="fas fa-server"></i>
+                Server-Konfiguration
+            </h1>
+            <p class="subtitle is-6 has-text-centered has-text-grey-light">
+                Geben Sie die Server-Details ein
+            </p>
+
+            <form method="POST" action="{{ url_for('save_server_config') }}">
+                <div class="field">
+                    <label class="label has-text-light">
+                        <i class="fas fa-network-wired mr-2"></i>
+                        ChirpStack Server URL
+                    </label>
+                    <div class="control has-icons-left">
+                        <input 
+                            class="input dark-input" 
+                            type="text" 
+                            name="server_url" 
+                            placeholder="z.B. localhost:8080"
+                            value="{% if server_url %}{{ server_url }}{% endif %}">
+                        <span class="icon is-left">
+                            <i class="fas fa-network-wired"></i>
+                        </span>
+                    </div>
+                </div>
+
+                <div class="field">
+                    <label class="label has-text-light">
+                        <i class="fas fa-key mr-2"></i>
+                        API Key
+                    </label>
+                    <div class="control">
+                        <textarea 
+                            class="textarea dark-textarea" 
+                            name="api_code" 
+                            placeholder="Fügen Sie hier Ihren API Key ein..."
+                            rows="4">{% if api_code %}{{ api_code }}{% endif %}</textarea>
+                    </div>
+                    <p class="help has-text-grey-light">
+                        <i class="fas fa-info-circle"></i>
+                        Der API Key wird in der globalen Variable <strong>API_CODE</strong> gespeichert
+                    </p>
+                </div>
+
+                <div class="field">
+                    <label class="label has-text-light">
+                        <i class="fas fa-building mr-2"></i>
+                        Tenant ID
+                    </label>
+                    <div class="control has-icons-left">
+                        <input 
+                            class="input dark-input" 
+                            type="text" 
+                            name="tenant_id" 
+                            placeholder="Tenant ID eingeben"
+                            value="{% if tenant_id %}{{ tenant_id }}{% endif %}">
+                        <span class="icon is-left">
+                            <i class="fas fa-building"></i>
+                        </span>
+                    </div>
+                    <p class="help has-text-grey-light">
+                        <i class="fas fa-info-circle"></i>
+                        Die Tenant ID wird in der globalen Variable <strong>TENANT_ID</strong> gespeichert
+                    </p>
+                </div>
+
+                <div class="field">
+                    <div class="control">
+                        <button class="button is-info is-fullwidth is-medium" type="submit">
+                            <span class="icon">
+                                <i class="fas fa-save"></i>
+                            </span>
+                            <span>Konfiguration speichern</span>
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <!-- Current Configuration Status -->
+        <div class="box dark-box">
+            <h2 class="subtitle is-5 has-text-light">
+                <i class="fas fa-info-circle"></i>
+                Aktuelle Konfiguration
+            </h2>
+            <div class="content has-text-light">
+                <!-- Server URL Status -->
+                <div class="mb-4">
+                    <h3 class="has-text-light">
+                        <i class="fas fa-network-wired mr-2"></i>
+                        ChirpStack Server URL
+                    </h3>
+                    {% if server_url %}
+                        <div class="notification is-success dark-notification">
+                            <p>
+                                <i class="fas fa-check-circle"></i>
+                                <strong>Konfiguriert</strong>
+                            </p>
+                            <p class="mt-2">
+                                Globale Variable: <code class="has-background-dark has-text-light px-2 py-1">SERVER_URL</code>
+                            </p>
+                            <p class="mt-2">
+                                Wert: <code class="has-background-dark has-text-info px-2 py-1">{{ server_url }}</code>
+                            </p>
+                        </div>
+                    {% else %}
+                        <div class="notification is-warning dark-notification">
+                            <p>
+                                <i class="fas fa-exclamation-triangle"></i>
+                                <strong>Nicht konfiguriert</strong>
+                            </p>
+                            <p class="mt-2">
+                                Die globale Variable <code class="has-background-dark has-text-light px-2 py-1">SERVER_URL</code> ist derzeit leer.
+                            </p>
+                        </div>
+                    {% endif %}
+                </div>
+
+                <!-- API Code Status -->
+                <div class="mb-4">
+                    <h3 class="has-text-light">
+                        <i class="fas fa-key mr-2"></i>
+                        API Key
+                    </h3>
+                    {% if api_code %}
+                        <div class="notification is-success dark-notification">
+                            <p>
+                                <i class="fas fa-check-circle"></i>
+                                <strong>Konfiguriert</strong>
+                            </p>
+                            <p class="mt-2">
+                                Globale Variable: <code class="has-background-dark has-text-light px-2 py-1">API_CODE</code>
+                            </p>
+                            <p class="mt-2">
+                                Länge: <strong>{{ api_code|length }}</strong> Zeichen
+                            </p>
+                            <details class="mt-3">
+                                <summary class="has-text-weight-bold" style="cursor: pointer;">Aktuellen Wert anzeigen</summary>
+                                <pre class="mt-2 has-background-dark has-text-light p-3" style="border-radius: 4px; overflow-x: auto;">{{ api_code }}</pre>
+                            </details>
+                        </div>
+                    {% else %}
+                        <div class="notification is-warning dark-notification">
+                            <p>
+                                <i class="fas fa-exclamation-triangle"></i>
+                                <strong>Nicht konfiguriert</strong>
+                            </p>
+                            <p class="mt-2">
+                                Die globale Variable <code class="has-background-dark has-text-light px-2 py-1">API_CODE</code> ist derzeit leer.
+                            </p>
+                        </div>
+                    {% endif %}
+                </div>
+
+                <!-- Tenant ID Status -->
+                <div class="mb-4">
+                    <h3 class="has-text-light">
+                        <i class="fas fa-building mr-2"></i>
+                        Tenant ID
+                    </h3>
+                    {% if tenant_id %}
+                        <div class="notification is-success dark-notification">
+                            <p>
+                                <i class="fas fa-check-circle"></i>
+                                <strong>Konfiguriert</strong>
+                            </p>
+                            <p class="mt-2">
+                                Globale Variable: <code class="has-background-dark has-text-light px-2 py-1">TENANT_ID</code>
+                            </p>
+                            <p class="mt-2">
+                                Wert: <code class="has-background-dark has-text-info px-2 py-1">{{ tenant_id }}</code>
+                            </p>
+                        </div>
+                    {% else %}
+                        <div class="notification is-warning dark-notification">
+                            <p>
+                                <i class="fas fa-exclamation-triangle"></i>
+                                <strong>Nicht konfiguriert</strong>
+                            </p>
+                            <p class="mt-2">
+                                Die globale Variable <code class="has-background-dark has-text-light px-2 py-1">TENANT_ID</code> ist derzeit leer.
+                            </p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Info Section -->
+        <div class="notification is-info dark-notification">
+            <h2 class="subtitle is-5 has-text-light">
+                <i class="fas fa-lightbulb"></i>
+                Hinweise:
+            </h2>
+            <div class="content has-text-light">
+                <ul>
+                    <li>Die ChirpStack Server URL wird in der globalen Variable <code>SERVER_URL</code> gespeichert</li>
+                    <li>Der API Key wird in der globalen Variable <code>API_CODE</code> gespeichert</li>
+                    <li>Die Tenant ID wird in der globalen Variable <code>TENANT_ID</code> gespeichert</li>
+                    <li><strong>Application ID und Device Profile ID werden aus der hochgeladenen Datei gelesen</strong></li>
+                    <li>Sie können die Konfiguration jederzeit aktualisieren</li>
+                    <li>Die gespeicherten Werte bleiben während der Server-Laufzeit erhalten</li>
+                    <li>Bei einem Server-Neustart werden die Werte gelöscht</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,462 @@
+{% extends "base.html" %}
+
+{% block title %}Geräteverwaltung{% endblock %}
+
+{% block content %}
+<section class="section">
+    <div class="container">
+        <h1 class="title has-text-white">
+            <i class="fas fa-cogs"></i> Geräteverwaltung
+        </h1>
+        <p class="subtitle has-text-grey-light">
+            Verwalten und löschen Sie registrierte LoRaWAN-Geräte
+        </p>
+
+        <!-- Application ID Input -->
+        <div class="box">
+            <div class="field">
+                <label class="label has-text-white">Application ID <span class="has-text-danger">*</span></label>
+                <div class="control has-icons-left">
+                    <input class="input" type="text" id="application_id" 
+                           placeholder="z.B. 550e8400-e29b-41d4-a716-446655440000"
+                           value="{{ session.get('application_id', '') }}"
+                           required>
+                    <span class="icon is-small is-left">
+                        <i class="fas fa-folder"></i>
+                    </span>
+                </div>
+                <p class="help has-text-grey-light">
+                    Application ID ist erforderlich, um Geräte aufzulisten
+                </p>
+            </div>
+
+            <div class="field is-grouped">
+                <div class="control">
+                    <button class="button is-primary" id="loadDevicesBtn" onclick="loadDevices()">
+                        <span class="icon">
+                            <i class="fas fa-list"></i>
+                        </span>
+                        <span>Geräte laden</span>
+                    </button>
+                </div>
+                <div class="control">
+                    <button class="button is-danger" id="deleteAllBtn" onclick="deleteSelected()" disabled>
+                        <span class="icon">
+                            <i class="fas fa-trash"></i>
+                        </span>
+                        <span>Ausgewählte löschen</span>
+                    </button>
+                </div>
+                <div class="control">
+                    <button class="button is-danger is-outlined" id="deleteAllDevicesBtn" onclick="deleteAll()" disabled>
+                        <span class="icon">
+                            <i class="fas fa-trash-alt"></i>
+                        </span>
+                        <span>Alle löschen</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Loading Indicator -->
+        <div id="loadingDiv" class="box has-text-centered" style="display: none;">
+            <span class="icon has-text-primary is-large">
+                <i class="fas fa-spinner fa-pulse fa-3x"></i>
+            </span>
+            <p class="has-text-white mt-3">Lade Geräte...</p>
+        </div>
+
+        <!-- Devices Table -->
+        <div id="devicesDiv" style="display: none;">
+            <div class="box">
+                <div class="level mb-4">
+                    <div class="level-left">
+                        <div class="level-item">
+                            <div>
+                                <p class="heading has-text-grey-light">Geräte gefunden</p>
+                                <p class="title has-text-white" id="deviceCount">0</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="level-right">
+                        <div class="level-item">
+                            <div class="field">
+                                <div class="control has-icons-left">
+                                    <input class="input" type="text" id="searchInput" 
+                                           placeholder="DevEUI oder Name suchen..."
+                                           onkeyup="filterDevices()">
+                                    <span class="icon is-small is-left">
+                                        <i class="fas fa-search"></i>
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="table-container">
+                    <table style="width: 100%; background-color: white; border-collapse: collapse;">
+                        <thead>
+                            <tr style="background-color: white;">
+                                <th style="width: 50px; background-color: white; color: black; border: 1px solid #dbdbdb;">
+                                    <label class="checkbox">
+                                        <input type="checkbox" id="selectAll" onchange="toggleSelectAll()">
+                                    </label>
+                                </th>
+                                <th style="background-color: white; color: black; border: 1px solid #dbdbdb;">DevEUI</th>
+                                <th style="background-color: white; color: black; border: 1px solid #dbdbdb;">Name</th>
+                                <th style="background-color: white; color: black; border: 1px solid #dbdbdb;">Beschreibung</th>
+                                <th style="width: 120px; background-color: white; color: black; border: 1px solid #dbdbdb;">Aktionen</th>
+                            </tr>
+                        </thead>
+                        <tbody id="devicesTableBody">
+                            <!-- Devices will be loaded here -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <div id="noDevicesDiv" class="has-text-centered py-6" style="display: none;">
+                    <span class="icon has-text-grey is-large">
+                        <i class="fas fa-inbox fa-3x"></i>
+                    </span>
+                    <p class="has-text-grey-light mt-3">Keine Geräte gefunden</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Error Message -->
+        <div id="errorDiv" class="notification is-danger" style="display: none;">
+            <button class="delete" onclick="document.getElementById('errorDiv').style.display='none'"></button>
+            <span id="errorMessage"></span>
+        </div>
+
+        <!-- Success Message -->
+        <div id="successDiv" class="notification is-success" style="display: none;">
+            <button class="delete" onclick="document.getElementById('successDiv').style.display='none'"></button>
+            <span id="successMessage"></span>
+        </div>
+
+        <!-- Back Button -->
+        <div class="field mt-5">
+            <div class="control">
+                <a href="{{ url_for('index') }}" class="button is-light">
+                    <span class="icon">
+                        <i class="fas fa-arrow-left"></i>
+                    </span>
+                    <span>Zurück</span>
+                </a>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal" id="deleteModal">
+    <div class="modal-background" onclick="closeDeleteModal()"></div>
+    <div class="modal-card">
+        <header class="modal-card-head has-background-danger">
+            <p class="modal-card-title has-text-white">
+                <i class="fas fa-exclamation-triangle"></i> Löschen bestätigen
+            </p>
+            <button class="delete" aria-label="close" onclick="closeDeleteModal()"></button>
+        </header>
+        <section class="modal-card-body">
+            <p id="deleteConfirmMessage" class="has-text-white"></p>
+            <div class="mt-4">
+                <progress class="progress is-danger" id="deleteProgress" style="display: none;"></progress>
+                <p id="deleteStatus" class="has-text-grey-light" style="display: none;"></p>
+            </div>
+        </section>
+        <footer class="modal-card-foot" style="justify-content: flex-end;">
+            <button class="button" onclick="closeDeleteModal()">Abbrechen</button>
+            <button class="button is-danger" id="confirmDeleteBtn" onclick="confirmDelete()">
+                <span class="icon">
+                    <i class="fas fa-trash"></i>
+                </span>
+                <span>Löschen</span>
+            </button>
+        </footer>
+    </div>
+</div>
+
+<script>
+let currentDevices = [];
+let devicesToDelete = [];
+let deleteMode = 'selected'; // 'selected' or 'all'
+
+function loadDevices() {
+    const appId = document.getElementById('application_id').value.trim();
+    
+    if (!appId) {
+        showError('Bitte geben Sie eine Application ID ein.');
+        return;
+    }
+    
+    // Hide previous results
+    document.getElementById('devicesDiv').style.display = 'none';
+    document.getElementById('errorDiv').style.display = 'none';
+    document.getElementById('successDiv').style.display = 'none';
+    
+    // Show loading
+    document.getElementById('loadingDiv').style.display = 'block';
+    document.getElementById('loadDevicesBtn').classList.add('is-loading');
+    
+    // Fetch devices
+    const formData = new FormData();
+    formData.append('application_id', appId);
+    
+    fetch('/api/list-devices', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        document.getElementById('loadingDiv').style.display = 'none';
+        document.getElementById('loadDevicesBtn').classList.remove('is-loading');
+        
+        if (!data.success) {
+            showError(data.message || 'Fehler beim Laden der Geräte');
+            return;
+        }
+        
+        currentDevices = data.data.devices;
+        displayDevices(currentDevices);
+    })
+    .catch(error => {
+        document.getElementById('loadingDiv').style.display = 'none';
+        document.getElementById('loadDevicesBtn').classList.remove('is-loading');
+        showError('Fehler beim Laden der Geräte: ' + error);
+    });
+}
+
+function displayDevices(devices) {
+    const tbody = document.getElementById('devicesTableBody');
+    tbody.innerHTML = '';
+    
+    document.getElementById('deviceCount').textContent = devices.length;
+    
+    if (devices.length === 0) {
+        document.getElementById('devicesDiv').style.display = 'block';
+        document.getElementById('noDevicesDiv').style.display = 'block';
+        document.getElementById('deleteAllBtn').disabled = true;
+        document.getElementById('deleteAllDevicesBtn').disabled = true;
+        return;
+    }
+    
+    document.getElementById('noDevicesDiv').style.display = 'none';
+    document.getElementById('deleteAllDevicesBtn').disabled = false;
+    
+    devices.forEach(device => {
+        const row = document.createElement('tr');
+        row.className = 'device-row';
+        row.dataset.deveui = device.dev_eui.toLowerCase();
+        row.dataset.name = (device.name || '').toLowerCase();
+        
+        row.innerHTML = `
+            <td style="background-color: white; color: black; border: 1px solid #dbdbdb;">
+                <label class="checkbox">
+                    <input type="checkbox" class="device-checkbox" value="${device.dev_eui}"
+                           onchange="updateDeleteButton()">
+                </label>
+            </td>
+            <td style="background-color: white; color: black; border: 1px solid #dbdbdb;">
+                <code style="color: black;">${device.dev_eui}</code>
+            </td>
+            <td style="background-color: white; color: black; border: 1px solid #dbdbdb;">${device.name || '-'}</td>
+            <td style="background-color: white; color: black; border: 1px solid #dbdbdb;">${device.description || '-'}</td>
+            <td style="background-color: white; color: black; border: 1px solid #dbdbdb;">
+                <button class="button is-small is-danger is-outlined" 
+                        onclick="deleteSingleDevice('${device.dev_eui}')">
+                    <span class="icon is-small">
+                        <i class="fas fa-trash"></i>
+                    </span>
+                </button>
+            </td>
+        `;
+        
+        tbody.appendChild(row);
+    });
+    
+    document.getElementById('devicesDiv').style.display = 'block';
+}
+
+function filterDevices() {
+    const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+    const rows = document.querySelectorAll('.device-row');
+    let visibleCount = 0;
+    
+    rows.forEach(row => {
+        const devEui = row.dataset.deveui;
+        const name = row.dataset.name;
+        
+        if (devEui.includes(searchTerm) || name.includes(searchTerm)) {
+            row.style.display = '';
+            visibleCount++;
+        } else {
+            row.style.display = 'none';
+        }
+    });
+    
+    document.getElementById('noDevicesDiv').style.display = visibleCount === 0 ? 'block' : 'none';
+}
+
+function toggleSelectAll() {
+    const selectAll = document.getElementById('selectAll').checked;
+    const checkboxes = document.querySelectorAll('.device-checkbox');
+    
+    checkboxes.forEach(cb => {
+        if (cb.closest('.device-row').style.display !== 'none') {
+            cb.checked = selectAll;
+        }
+    });
+    
+    updateDeleteButton();
+}
+
+function updateDeleteButton() {
+    const checked = document.querySelectorAll('.device-checkbox:checked').length;
+    document.getElementById('deleteAllBtn').disabled = checked === 0;
+    
+    // Update select all checkbox state
+    const total = document.querySelectorAll('.device-checkbox').length;
+    const selectAll = document.getElementById('selectAll');
+    selectAll.checked = checked === total && total > 0;
+    selectAll.indeterminate = checked > 0 && checked < total;
+}
+
+function deleteSelected() {
+    const checkboxes = document.querySelectorAll('.device-checkbox:checked');
+    devicesToDelete = Array.from(checkboxes).map(cb => cb.value);
+    deleteMode = 'selected';
+    
+    if (devicesToDelete.length === 0) {
+        showError('Bitte wählen Sie mindestens ein Gerät aus.');
+        return;
+    }
+    
+    document.getElementById('deleteConfirmMessage').textContent = 
+        `Möchten Sie wirklich ${devicesToDelete.length} Gerät(e) löschen?`;
+    
+    openDeleteModal();
+}
+
+function deleteAll() {
+    devicesToDelete = currentDevices.map(d => d.dev_eui);
+    deleteMode = 'all';
+    
+    document.getElementById('deleteConfirmMessage').textContent = 
+        `Möchten Sie wirklich ALLE ${devicesToDelete.length} Geräte löschen? Diese Aktion kann nicht rückgängig gemacht werden!`;
+    
+    openDeleteModal();
+}
+
+function deleteSingleDevice(devEui) {
+    devicesToDelete = [devEui];
+    deleteMode = 'single';
+    
+    document.getElementById('deleteConfirmMessage').textContent = 
+        `Möchten Sie das Gerät ${devEui} wirklich löschen?`;
+    
+    openDeleteModal();
+}
+
+function openDeleteModal() {
+    document.getElementById('deleteModal').classList.add('is-active');
+    document.getElementById('deleteProgress').style.display = 'none';
+    document.getElementById('deleteStatus').style.display = 'none';
+    document.getElementById('confirmDeleteBtn').disabled = false;
+}
+
+function closeDeleteModal() {
+    document.getElementById('deleteModal').classList.remove('is-active');
+}
+
+function confirmDelete() {
+    document.getElementById('confirmDeleteBtn').disabled = true;
+    document.getElementById('deleteProgress').style.display = 'block';
+    document.getElementById('deleteProgress').removeAttribute('value');
+    document.getElementById('deleteStatus').style.display = 'block';
+    document.getElementById('deleteStatus').textContent = 'Lösche Geräte...';
+    
+    // Use Server-Sent Events for streaming progress
+    const formData = new FormData();
+    formData.append('dev_euis', devicesToDelete.join(','));
+    
+    fetch('/api/delete-devices-stream', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => {
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = '';
+        
+        function processText({ done, value }) {
+            if (done) {
+                closeDeleteModal();
+                setTimeout(() => loadDevices(), 1000);
+                return;
+            }
+            
+            buffer += decoder.decode(value, { stream: true });
+            const lines = buffer.split('\n');
+            buffer = lines.pop();
+            
+            lines.forEach(line => {
+                if (line.startsWith('data: ')) {
+                    const data = JSON.parse(line.substring(6));
+                    
+                    if (data.error) {
+                        showError(data.error);
+                        closeDeleteModal();
+                        return;
+                    }
+                    
+                    if (data.status === 'processing') {
+                        const progress = (data.current / data.total) * 100;
+                        document.getElementById('deleteProgress').value = progress;
+                        document.getElementById('deleteStatus').textContent = 
+                            `Lösche ${data.current}/${data.total}: ${data.device}`;
+                    }
+                    
+                    if (data.status === 'complete') {
+                        const successCount = data.results.successful.length;
+                        const failCount = data.results.failed.length;
+                        
+                        let message = `${successCount} Gerät(e) erfolgreich gelöscht.`;
+                        if (failCount > 0) {
+                            message += ` ${failCount} Gerät(e) konnten nicht gelöscht werden.`;
+                        }
+                        
+                        showSuccess(message);
+                        closeDeleteModal();
+                        setTimeout(() => loadDevices(), 1000);
+                        return;
+                    }
+                }
+            });
+            
+            return reader.read().then(processText);
+        }
+        
+        return reader.read().then(processText);
+    })
+    .catch(error => {
+        showError('Fehler beim Löschen: ' + error);
+        closeDeleteModal();
+    });
+}
+
+function showError(message) {
+    document.getElementById('errorMessage').textContent = message;
+    document.getElementById('errorDiv').style.display = 'block';
+    document.getElementById('successDiv').style.display = 'none';
+}
+
+function showSuccess(message) {
+    document.getElementById('successMessage').textContent = message;
+    document.getElementById('successDiv').style.display = 'block';
+    document.getElementById('errorDiv').style.display = 'none';
+}
+</script>
+{% endblock %}

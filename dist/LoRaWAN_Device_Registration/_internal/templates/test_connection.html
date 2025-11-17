@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ChirpStack Verbindungstest</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.4/css/bulma.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* Force dark mode */
+        body {
+            background-color: #0a0a0a !important;
+            color: #f5f5f5 !important;
+            min-height: 100vh;
+        }
+        
+        .hero {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+        }
+        
+        .box {
+            background-color: #1a1a1a !important;
+            color: #f5f5f5 !important;
+            border: 1px solid #2a2a2a;
+        }
+        
+        .title, .subtitle {
+            color: #f5f5f5 !important;
+        }
+        
+        .label {
+            color: #dbdbdb !important;
+        }
+        
+        .content {
+            color: #f5f5f5 !important;
+        }
+        
+        .message {
+            background-color: #1a1a1a;
+        }
+        
+        .message.is-success {
+            background-color: #1a2e1a;
+            border-color: #48c774;
+        }
+        
+        .message.is-danger {
+            background-color: #2e1a1a;
+            border-color: #f14668;
+        }
+        
+        .message.is-warning {
+            background-color: #2e2a1a;
+            border-color: #ffe08a;
+        }
+        
+        .message-header {
+            background-color: rgba(0,0,0,0.2) !important;
+        }
+        
+        .message-body {
+            border-color: rgba(255,255,255,0.1) !important;
+            color: #f5f5f5 !important;
+        }
+        
+        .tag {
+            background-color: #2a2a2a !important;
+            color: #f5f5f5 !important;
+        }
+        
+        .tag.is-info {
+            background-color: #3273dc !important;
+            color: white !important;
+        }
+        
+        .tag.is-success {
+            background-color: #48c774 !important;
+            color: white !important;
+        }
+        
+        .tag.is-danger {
+            background-color: #f14668 !important;
+            color: white !important;
+        }
+        
+        .button.is-primary {
+            background-color: #3273dc;
+            border-color: transparent;
+        }
+        
+        .button.is-primary:hover {
+            background-color: #2366d1;
+        }
+        
+        .button.is-link {
+            background-color: transparent;
+            border-color: #3273dc;
+            color: #3273dc;
+        }
+        
+        .button.is-link:hover {
+            background-color: #3273dc;
+            color: white;
+        }
+        
+        code {
+            background-color: #2a2a2a !important;
+            color: #f5f5f5 !important;
+            padding: 0.25em 0.5em;
+            border-radius: 3px;
+        }
+        
+        .details-list {
+            list-style: none;
+            padding-left: 0;
+        }
+        
+        .details-list li {
+            padding: 0.5rem 0;
+            border-bottom: 1px solid #2a2a2a;
+        }
+        
+        .details-list li:last-child {
+            border-bottom: none;
+        }
+        
+        .icon-text .icon {
+            margin-right: 0.5rem;
+        }
+        
+        .status-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+        
+        .config-info {
+            background-color: #0f0f0f;
+            padding: 1rem;
+            border-radius: 6px;
+            border-left: 4px solid #3273dc;
+        }
+    </style>
+</head>
+<body>
+    <section class="hero is-primary is-small">
+        <div class="hero-body">
+            <div class="container">
+                <h1 class="title">
+                    <i class="fas fa-plug"></i> ChirpStack Verbindungstest
+                </h1>
+                <p class="subtitle">
+                    Überprüfen Sie die Verbindung zu Ihrem ChirpStack Server
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <section class="section">
+        <div class="container">
+            <div class="columns is-centered">
+                <div class="column is-10">
+                    
+                    {% if not configured %}
+                    <!-- Not Configured Message -->
+                    <div class="box has-text-centered">
+                        <div class="status-icon has-text-warning">
+                            <i class="fas fa-exclamation-triangle"></i>
+                        </div>
+                        <h2 class="title is-4">Server nicht konfiguriert</h2>
+                        <p class="content">
+                            Bitte konfigurieren Sie zuerst die ChirpStack Server-Verbindung.
+                        </p>
+                        <div class="buttons is-centered" style="margin-top: 2rem;">
+                            <a href="{{ url_for('server_config') }}" class="button is-primary">
+                                <span class="icon">
+                                    <i class="fas fa-cog"></i>
+                                </span>
+                                <span>Server konfigurieren</span>
+                            </a>
+                            <a href="{{ url_for('index') }}" class="button is-link">
+                                <span class="icon">
+                                    <i class="fas fa-home"></i>
+                                </span>
+                                <span>Zur Startseite</span>
+                            </a>
+                        </div>
+                    </div>
+                    
+                    {% else %}
+                    <!-- Configuration Info -->
+                    <div class="box">
+                        <h2 class="title is-5">
+                            <i class="fas fa-info-circle"></i> Server-Konfiguration
+                        </h2>
+                        <div class="config-info">
+                            <div class="columns">
+                                <div class="column">
+                                    <p><strong>Server URL:</strong> <code>{{ server_url }}</code></p>
+                                </div>
+                                <div class="column">
+                                    <p><strong>API Key:</strong> <code>{{ api_code[:20] }}...</code></p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    {% if result %}
+                    <!-- Connection Result -->
+                    <div class="box">
+                        <div class="has-text-centered">
+                            {% if result.success %}
+                            <div class="status-icon has-text-success">
+                                <i class="fas fa-check-circle"></i>
+                            </div>
+                            <h2 class="title is-4 has-text-success">{{ result.message }}</h2>
+                            {% else %}
+                            <div class="status-icon has-text-danger">
+                                <i class="fas fa-times-circle"></i>
+                            </div>
+                            <h2 class="title is-4 has-text-danger">{{ result.message }}</h2>
+                            {% endif %}
+                        </div>
+                        
+                        {% if result.details %}
+                        <div style="margin-top: 2rem;">
+                            <h3 class="title is-6">Verbindungsdetails:</h3>
+                            <ul class="details-list">
+                                {% for detail in result.details %}
+                                <li>{{ detail }}</li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                        {% endif %}
+                    </div>
+                    
+                    {% if result.success %}
+                    <!-- Success Actions -->
+                    <div class="notification is-success is-light">
+                        <p><strong>✓ Verbindung erfolgreich!</strong></p>
+                        <p>Sie können jetzt Geräte-Dateien hochladen und registrieren.</p>
+                    </div>
+                    {% else %}
+                    <!-- Troubleshooting Tips -->
+                    <div class="box">
+                        <h3 class="title is-5">
+                            <i class="fas fa-lightbulb"></i> Fehlerbehebung
+                        </h3>
+                        <div class="content">
+                            <ul>
+                                <li><strong>Server URL prüfen:</strong> Stellen Sie sicher, dass die URL im Format <code>host:port</code> vorliegt (z.B. <code>localhost:8080</code>)</li>
+                                <li><strong>API Key prüfen:</strong> Überprüfen Sie, ob der API Key korrekt ist</li>
+                                <li><strong>Server läuft:</strong> Stellen Sie sicher, dass ChirpStack läuft</li>
+                                <li><strong>Firewall:</strong> Überprüfen Sie Firewall-Einstellungen</li>
+                                <li><strong>gRPC Port:</strong> Standardmäßig verwendet ChirpStack Port 8080 für gRPC</li>
+                            </ul>
+                        </div>
+                    </div>
+                    {% endif %}
+                    {% endif %}
+                    
+                    <!-- Action Buttons -->
+                    <div class="buttons is-centered" style="margin-top: 2rem;">
+                        <a href="{{ url_for('test_connection') }}" class="button is-primary">
+                            <span class="icon">
+                                <i class="fas fa-sync"></i>
+                            </span>
+                            <span>Erneut testen</span>
+                        </a>
+                        <a href="{{ url_for('server_config') }}" class="button is-link">
+                            <span class="icon">
+                                <i class="fas fa-cog"></i>
+                            </span>
+                            <span>Konfiguration ändern</span>
+                        </a>
+                        <a href="{{ url_for('index') }}" class="button is-link">
+                            <span class="icon">
+                                <i class="fas fa-home"></i>
+                            </span>
+                            <span>Zur Startseite</span>
+                        </a>
+                    </div>
+                    {% endif %}
+                    
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer class="footer" style="background-color: #0a0a0a; border-top: 1px solid #2a2a2a;">
+        <div class="content has-text-centered">
+            <p style="color: #888;">
+                <strong style="color: #f5f5f5;">LoRaWAN Device Registration</strong><br>
+                <small>Master Thesis Project</small>
+            </p>
+        </div>
+    </footer>
+</body>
+</html>

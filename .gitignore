@@ -22,6 +22,10 @@ uploads/*
 # Logs
 logs/
 
+# PyInstaller build artifacts
+build/
+# Keep dist/ and *.spec for releases
+
 # IDE
 .vscode/
 .idea/
