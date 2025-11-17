@@ -1,6 +1,7 @@
 1. Make a simple non gui, lightweight application based off on the main application. 
 2. [DONE] - Add the functionality to see the current devices, list them and then delete them if required. 
-3. Add an executable file for easy launching. 
+3. [DONE] - Add an executable file for easy launching. 
+4. Have the readme in german. 
 
 
 
