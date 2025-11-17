@@ -25,16 +25,12 @@
                             class="input dark-input" 
                             type="text" 
                             name="server_url" 
-                            placeholder="z.B. localhost:8090"
+                            placeholder="z.B. localhost:8080"
                             value="{% if server_url %}{{ server_url }}{% endif %}">
                         <span class="icon is-left">
                             <i class="fas fa-network-wired"></i>
                         </span>
                     </div>
-                    <p class="help has-text-grey-light">
-                        <i class="fas fa-info-circle"></i>
-                        <strong>WICHTIG:</strong> Verwenden Sie <strong>localhost:8090</strong> für die gRPC API (nicht 8080 für Web UI!)
-                    </p>
                 </div>
 
                 <div class="field">
