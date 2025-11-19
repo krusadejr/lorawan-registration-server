@@ -25,6 +25,9 @@ exampleDevicesAIGenerated/UploadTest_*/
 # Logs
 logs/
 
+# Configuration history
+config_history.json
+
 # PyInstaller build artifacts
 build/
 # Keep dist/ and *.spec for releases

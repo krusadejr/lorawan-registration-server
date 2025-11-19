@@ -16,8 +16,10 @@ app.secret_key = 'your-secret-key-change-this-in-production'
 # Configuration
 UPLOAD_FOLDER = 'uploads'
 LOG_FOLDER = 'logs'
+CONFIG_HISTORY_FILE = 'config_history.json'
 ALLOWED_EXTENSIONS = {'xlsx', 'xls', 'xlsm', 'txt', 'json', 'csv'}
 MAX_FILE_SIZE = 16 * 1024 * 1024  # 16MB max file size
+MAX_HISTORY_ITEMS = 5  # Maximum number of items to keep in history
 
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.config['MAX_CONTENT_LENGTH'] = MAX_FILE_SIZE
@@ -47,6 +49,52 @@ API_CODE = None                 # API key for authentication
 TENANT_ID = None                # Tenant ID
 
 
+def load_config_history():
+    """Load configuration history from JSON file."""
+    if os.path.exists(CONFIG_HISTORY_FILE):
+        try:
+            with open(CONFIG_HISTORY_FILE, 'r') as f:
+                return json.load(f)
+        except Exception as e:
+            logger.error(f"Error loading config history: {e}")
+            return {'server_urls': [], 'api_keys': [], 'tenant_ids': []}
+    return {'server_urls': [], 'api_keys': [], 'tenant_ids': []}
+
+
+def save_config_history(history):
+    """Save configuration history to JSON file."""
+    try:
+        with open(CONFIG_HISTORY_FILE, 'w') as f:
+            json.dump(history, f, indent=2)
+        logger.info("Config history saved successfully")
+    except Exception as e:
+        logger.error(f"Error saving config history: {e}")
+
+
+def add_to_history(history, key, value):
+    """Add a value to history list, maintaining max size and avoiding duplicates."""
+    if not value or not value.strip():
+        return history
+    
+    value = value.strip()
+    
+    # Initialize list if not exists
+    if key not in history:
+        history[key] = []
+    
+    # Remove if already exists (to move it to front)
+    if value in history[key]:
+        history[key].remove(value)
+    
+    # Add to front
+    history[key].insert(0, value)
+    
+    # Limit to MAX_HISTORY_ITEMS
+    history[key] = history[key][:MAX_HISTORY_ITEMS]
+    
+    return history
+
+
 def allowed_file(filename):
     """Check if the uploaded file has an allowed extension."""
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
@@ -56,22 +104,26 @@ def allowed_file(filename):
 def index():
     """Home page with file upload form."""
     global SERVER_URL, API_CODE, TENANT_ID
+    history = load_config_history()
     return render_template('index.html', 
                          server_url=SERVER_URL,
                          api_code=API_CODE,
                          tenant_id=TENANT_ID,
-                         device_profile_id=None)
+                         device_profile_id=None,
+                         history=history)
 
 
 @app.route('/server-config')
 def server_config():
     """Server configuration page."""
     global SERVER_URL, API_CODE, TENANT_ID
+    history = load_config_history()
     return render_template('server_config.html', 
                          server_url=SERVER_URL, 
                          api_code=API_CODE,
                          tenant_id=TENANT_ID,
-                         device_profile_id=None)
+                         device_profile_id=None,
+                         history=history)
 
 
 @app.route('/save-server-config', methods=['POST'])
@@ -108,10 +160,34 @@ def save_server_config():
     
     logger.info(f"Global variables after save: SERVER_URL={SERVER_URL}, API_CODE length={len(API_CODE) if API_CODE else 0}, TENANT_ID={TENANT_ID}")
     
+    # Save to history
+    history = load_config_history()
+    if server_url:
+        history = add_to_history(history, 'server_urls', server_url)
+    if api_code:
+        history = add_to_history(history, 'api_keys', api_code)
+    if tenant_id:
+        history = add_to_history(history, 'tenant_ids', tenant_id)
+    save_config_history(history)
+    
     flash(f'Server-Konfiguration erfolgreich gespeichert: {", ".join(saved_vars)}', 'success')
     
     # Redirect to index with a prompt to upload file
     flash('✓ Server konfiguriert! Sie können jetzt Geräte-Dateien hochladen.', 'info')
+    return redirect(url_for('index'))
+
+
+@app.route('/clear-history', methods=['POST'])
+def clear_history():
+    """Clear configuration history."""
+    try:
+        if os.path.exists(CONFIG_HISTORY_FILE):
+            os.remove(CONFIG_HISTORY_FILE)
+        logger.info("Config history cleared")
+        flash('Konfigurationsverlauf erfolgreich gelöscht', 'success')
+    except Exception as e:
+        logger.error(f"Error clearing history: {e}")
+        flash(f'Fehler beim Löschen des Verlaufs: {str(e)}', 'danger')
     return redirect(url_for('index'))
 
 

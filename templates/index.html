@@ -78,6 +78,20 @@
                     </div>
                 </div>
             {% endif %}
+            
+            <!-- Clear History Button -->
+            {% if history and (history.server_urls or history.api_keys or history.tenant_ids) %}
+            <div class="mt-4">
+                <form method="POST" action="{{ url_for('clear_history') }}" onsubmit="return confirm('Möchten Sie wirklich den gesamten Konfigurationsverlauf löschen?');">
+                    <button type="submit" class="button is-small is-danger is-outlined">
+                        <span class="icon is-small">
+                            <i class="fas fa-trash"></i>
+                        </span>
+                        <span>Verlauf löschen</span>
+                    </button>
+                </form>
+            </div>
+            {% endif %}
         </div>
 
         <!-- Upload Section -->
