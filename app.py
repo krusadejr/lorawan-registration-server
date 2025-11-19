@@ -16,7 +16,7 @@ app.secret_key = 'your-secret-key-change-this-in-production'
 # Configuration
 UPLOAD_FOLDER = 'uploads'
 LOG_FOLDER = 'logs'
-ALLOWED_EXTENSIONS = {'xlsx', 'xls', 'xlsm', 'txt', 'json'}
+ALLOWED_EXTENSIONS = {'xlsx', 'xls', 'xlsm', 'txt', 'json', 'csv'}
 MAX_FILE_SIZE = 16 * 1024 * 1024  # 16MB max file size
 
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
@@ -311,6 +311,14 @@ def upload_file():
             logger.info(f"Session stored - filepath: {filepath}")
             logger.info(f"File exists check: {os.path.exists(parsed_data_file)}")
             
+            # Check if delimiter input is needed
+            if parse_result.get('needs_delimiter', False):
+                session['needs_delimiter'] = True
+                session['delimiter_info'] = parse_result.get('delimiter_info', {})
+                flash('Bitte geben Sie das Trennzeichen für die Datei an', 'info')
+                logger.info("Redirecting to delimiter_input")
+                return redirect(url_for('delimiter_input'))
+            
             flash(parse_result['message'], 'success')
             
             # Redirect to sheet selection page
@@ -327,8 +335,107 @@ def upload_file():
     
     else:
         logger.warning(f"Invalid file type: {file.filename}")
-        flash('Ungültiger Dateityp. Bitte laden Sie eine gültige Datei hoch (.xlsx, .xls, .xlsm, .txt, .json)', 'danger')
+        flash('Ungültiger Dateityp. Bitte laden Sie eine gültige Datei hoch (.xlsx, .xls, .xlsm, .csv, .txt, .json)', 'danger')
         return redirect(url_for('index'))
+
+
+@app.route('/delimiter-input')
+def delimiter_input():
+    """Page for manual delimiter input when auto-detection fails."""
+    logger.info("="*80)
+    logger.info("DELIMITER INPUT REQUEST")
+    logger.info("="*80)
+    
+    if not session.get('needs_delimiter', False):
+        logger.warning("Delimiter input not needed, redirecting to select_sheet")
+        return redirect(url_for('select_sheet'))
+    
+    original_filename = session.get('original_filename', '')
+    delimiter_info = session.get('delimiter_info', {})
+    
+    logger.info(f"Delimiter input needed for: {original_filename}")
+    logger.info(f"Delimiter info: {delimiter_info}")
+    
+    return render_template('delimiter_input.html',
+                         original_filename=original_filename,
+                         delimiter_info=delimiter_info)
+
+
+@app.route('/process-delimiter', methods=['POST'])
+def process_delimiter():
+    """Process the user-provided delimiter and re-parse the file."""
+    logger.info("="*80)
+    logger.info("PROCESS DELIMITER REQUEST")
+    logger.info("="*80)
+    
+    delimiter = request.form.get('delimiter', '').strip()
+    custom_delimiter = request.form.get('custom_delimiter', '').strip()
+    
+    # Use custom delimiter if provided, otherwise use the selected one
+    if custom_delimiter:
+        delimiter = custom_delimiter
+        logger.info(f"Using custom delimiter: repr={repr(delimiter)}")
+    else:
+        logger.info(f"Using predefined delimiter: {delimiter}")
+    
+    if not delimiter:
+        flash('Bitte wählen Sie ein Trennzeichen aus oder geben Sie ein eigenes ein', 'danger')
+        return redirect(url_for('delimiter_input'))
+    
+    # Convert common delimiter names to actual characters
+    delimiter_map = {
+        'comma': ',',
+        'semicolon': ';',
+        'tab': '\t',
+        'pipe': '|',
+        'space': ' '
+    }
+    
+    actual_delimiter = delimiter_map.get(delimiter, delimiter)
+    logger.info(f"Actual delimiter to use: repr={repr(actual_delimiter)}")
+    
+    # Get file info from session
+    filepath = session.get('filepath')
+    file_extension = filepath.rsplit('.', 1)[1].lower() if filepath else None
+    
+    if not filepath or not os.path.exists(filepath):
+        flash('Datei nicht gefunden. Bitte laden Sie die Datei erneut hoch.', 'danger')
+        return redirect(url_for('index'))
+    
+    try:
+        # Re-parse with the specified delimiter
+        from file_parser import parse_csv_txt_with_delimiter
+        parse_result = parse_csv_txt_with_delimiter(filepath, actual_delimiter)
+        
+        if not parse_result['success']:
+            flash(f"Fehler beim Parsen mit dem angegebenen Trennzeichen: {parse_result['message']}", 'danger')
+            return redirect(url_for('delimiter_input'))
+        
+        # Update session data
+        unique_id = filepath.rsplit('.', 1)[0].rsplit(os.sep, 1)[1]
+        parsed_data_file = os.path.join(app.config['UPLOAD_FOLDER'], f"{unique_id}_parsed.json")
+        
+        session_data = {}
+        for sheet_name, df in parse_result['data'].items():
+            session_data[sheet_name] = df.to_dict(orient='records')
+            logger.info(f"Sheet '{sheet_name}': {len(df)} rows, {len(df.columns)} columns")
+        
+        with open(parsed_data_file, 'w') as f:
+            json.dump(session_data, f)
+        
+        session['parsed_data_file'] = parsed_data_file
+        session['sheet_names'] = list(parse_result['sheets'])
+        session['needs_delimiter'] = False
+        session.pop('delimiter_info', None)
+        
+        flash(parse_result['message'], 'success')
+        logger.info("Delimiter processing successful, redirecting to select_sheet")
+        return redirect(url_for('select_sheet'))
+        
+    except Exception as e:
+        logger.error(f"Error processing delimiter: {str(e)}", exc_info=True)
+        flash(f'Fehler beim Verarbeiten: {str(e)}', 'danger')
+        return redirect(url_for('delimiter_input'))
 
 
 @app.route('/select-sheet')
