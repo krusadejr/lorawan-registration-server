@@ -28,6 +28,9 @@ logs/
 # Configuration history
 config_history.json
 
+# PRIVATE folder - sensitive/personal files not tracked
+PRIVATE/
+
 # PyInstaller build artifacts
 build/
 # Keep dist/ and *.spec for releases
