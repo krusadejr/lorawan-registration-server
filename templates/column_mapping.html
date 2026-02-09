@@ -203,6 +203,35 @@
                     </div>
                 </div>
 
+                <!-- Tags Selection - Optional -->
+                <div class="box dark-box mt-5">
+                    <h3 class="subtitle is-5 has-text-light mb-3">
+                        <i class="fas fa-tags"></i>
+                        Tags auswählen (Optional)
+                    </h3>
+                    <p class="help has-text-grey-light mb-4">
+                        Wählen Sie zusätzliche Spalten aus, die als Tags für das Gerät gespeichert werden sollen. 
+                        Diese ermöglichen es Ihnen, Geräte zu organisieren und zu filtern (z.B. Typ, Standort, Seriennummer).
+                    </p>
+                    
+                    <div class="columns is-multiline">
+                        {% for col in columns %}
+                        <div class="column is-one-third">
+                            <label class="checkbox">
+                                <input type="checkbox" name="tag_columns" value="{{ col }}" class="tag-checkbox">
+                                <span class="ml-2">{{ col }}</span>
+                            </label>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    
+                    {% if columns|length == 0 %}
+                    <div class="notification is-info is-light">
+                        <p>Keine Spalten verfügbar für Tags.</p>
+                    </div>
+                    {% endif %}
+                </div>
+
                 <!-- Preview Section -->
                 <div class="notification is-dark mt-5">
                     <h3 class="subtitle is-5 has-text-light">

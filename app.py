@@ -9,6 +9,8 @@ from datetime import datetime
 from file_parser import parse_file, get_column_info
 import time
 import io
+from concurrent.futures import ThreadPoolExecutor, as_completed
+import threading
 
 app = Flask(__name__)
 app.secret_key = 'your-secret-key-change-this-in-production'
@@ -662,6 +664,15 @@ def process_mapping():
         'description': request.form.get('description', '')  # Optional
     }
     
+    # Get tag columns from form (user selected tags)
+    tag_columns = request.form.getlist('tag_columns')
+    logger.info(f"Tag columns selected: {tag_columns}")
+    
+    if tag_columns:
+        column_mapping['tags'] = tag_columns
+    else:
+        column_mapping['tags'] = []
+    
     logger.info(f"Column mapping received: {column_mapping}")
     
     # Validate required fields
@@ -734,6 +745,16 @@ def registration_preview():
             'app_key': str(row[column_mapping['app_key']]) if column_mapping.get('app_key') and column_mapping['app_key'] else '',
             'description': str(row[column_mapping['description']]) if column_mapping.get('description') and column_mapping['description'] else ''
         }
+        
+        # Extract tags
+        tags = {}
+        if column_mapping.get('tags'):
+            for tag_col in column_mapping['tags']:
+                tag_value = str(row[tag_col]).strip() if tag_col in row and pd.notna(row[tag_col]) else ''
+                if tag_value:  # Only add non-empty tags
+                    tags[tag_col] = tag_value
+        
+        device['tags'] = tags
         mapped_devices.append(device)
     
     logger.info(f"Mapped {len(mapped_devices)} devices successfully")
@@ -822,6 +843,16 @@ def register_devices_stream():
                     'app_key': str(row[column_mapping['app_key']]).strip() if column_mapping.get('app_key') and column_mapping['app_key'] else '',
                     'description': str(row[column_mapping['description']]).strip() if column_mapping.get('description') and column_mapping['description'] else ''
                 }
+                
+                # Extract tags
+                tags = {}
+                if column_mapping.get('tags'):
+                    for tag_col in column_mapping['tags']:
+                        tag_value = str(row[tag_col]).strip() if tag_col in row and pd.notna(row[tag_col]) else ''
+                        if tag_value:  # Only add non-empty tags
+                            tags[tag_col] = tag_value
+                
+                device['tags'] = tags
                 devices_to_register.append(device)
             
             total = len(devices_to_register)
@@ -829,108 +860,191 @@ def register_devices_stream():
             # Send initial status
             yield f"data: {json.dumps({'status': 'starting', 'total': total, 'current': 0})}\n\n"
             
-            # Create gRPC client
-            logger.info(f"Creating gRPC client with SERVER_URL={SERVER_URL}, API_CODE length={len(API_CODE) if API_CODE else 0}")
-            from grpc_client import ChirpStackClient
-            client = ChirpStackClient(SERVER_URL, API_CODE)
-            
-            logger.info("Attempting to connect to ChirpStack...")
-            connected, conn_msg = client.connect()
-            logger.info(f"Connection result: connected={connected}, message={conn_msg}")
-            
-            if not connected:
-                yield f"data: {json.dumps({'error': f'Connection failed: {conn_msg}'})}\n\n"
-                return
+            logger.info(f"Starting parallel device registration for {total} devices")
             
             results = {'successful': [], 'failed': []}
+            results_lock = threading.Lock()  # Thread-safe access to results
+            completed_count = [0]  # Use list to allow mutation in nested function
             
-            # Register each device
-            for idx, device in enumerate(devices_to_register, 1):
+            # Define worker function for parallel processing
+            def register_single_device(idx_device_tuple):
+                """Register a single device - worker function for thread pool"""
+                idx, device = idx_device_tuple
                 try:
+                    # Create client for this thread
+                    from grpc_client import ChirpStackClient
+                    thread_client = ChirpStackClient(SERVER_URL, API_CODE)
+                    
+                    connected, conn_msg = thread_client.connect()
+                    if not connected:
+                        return {
+                            'idx': idx,
+                            'device': device,
+                            'result': 'failed',
+                            'message': f'Connection failed: {conn_msg}'
+                        }
+                    
                     # Check if device exists
-                    device_exists = client.device_exists(device['dev_eui'])
+                    device_exists = thread_client.device_exists(device['dev_eui'])
+                    logger.info(f"[Worker-{idx}] Device {device['dev_eui']}: exists={device_exists}, action={duplicate_action}")
                     
-                    logger.info(f"Device {device['dev_eui']}: exists={device_exists}, duplicate_action={duplicate_action}")
-                    
-                    if device_exists:
-                        if duplicate_action == 'skip':
-                            logger.info(f"Skipping existing device {device['dev_eui']}")
+                    if device_exists and duplicate_action == 'skip':
+                        with results_lock:
                             results['failed'].append({
                                 'dev_eui': device['dev_eui'],
                                 'name': device['name'],
                                 'error': 'Gerät existiert bereits (übersprungen)'
                             })
-                            yield f"data: {json.dumps({'status': 'processing', 'current': idx, 'total': total, 'device': device['name'], 'result': 'skipped', 'message': 'Bereits vorhanden'})}\n\n"
-                            continue
-                        elif duplicate_action == 'replace':
-                            logger.info(f"Attempting to replace device {device['dev_eui']}")
-                            deleted, del_msg = client.delete_device(device['dev_eui'])
-                            logger.info(f"Delete result: deleted={deleted}, msg={del_msg}")
-                            if not deleted:
+                        return {
+                            'idx': idx,
+                            'device': device,
+                            'result': 'skipped',
+                            'message': 'Bereits vorhanden'
+                        }
+                    
+                    if device_exists and duplicate_action == 'replace':
+                        deleted, del_msg = thread_client.delete_device(device['dev_eui'])
+                        if not deleted:
+                            with results_lock:
                                 results['failed'].append({
                                     'dev_eui': device['dev_eui'],
                                     'name': device['name'],
                                     'error': f'Fehler beim Löschen: {del_msg}'
                                 })
-                                yield f"data: {json.dumps({'status': 'processing', 'current': idx, 'total': total, 'device': device['name'], 'result': 'failed', 'message': 'Löschen fehlgeschlagen'})}\n\n"
-                                continue
-                            else:
-                                logger.info(f"Device {device['dev_eui']} deleted successfully, proceeding with creation")
+                            return {
+                                'idx': idx,
+                                'device': device,
+                                'result': 'failed',
+                                'message': 'Löschen fehlgeschlagen'
+                            }
+                        logger.info(f"[Worker-{idx}] Device {device['dev_eui']} deleted successfully")
                     
                     # Create device
-                    device_created, create_msg = client.create_device(
+                    device_created, create_msg = thread_client.create_device(
                         dev_eui=device['dev_eui'],
                         name=device['name'],
                         application_id=device['application_id'],
                         device_profile_id=device['device_profile_id'],
-                        description=device['description']
+                        description=device['description'],
+                        tags=device.get('tags', {}) if device.get('tags') else None
                     )
                     
                     if not device_created:
-                        results['failed'].append({
-                            'dev_eui': device['dev_eui'],
-                            'name': device['name'],
-                            'error': create_msg
-                        })
-                        yield f"data: {json.dumps({'status': 'processing', 'current': idx, 'total': total, 'device': device['name'], 'dev_eui': device['dev_eui'], 'result': 'failed', 'message': create_msg[:50]})}\n\n"
-                        continue
+                        with results_lock:
+                            results['failed'].append({
+                                'dev_eui': device['dev_eui'],
+                                'name': device['name'],
+                                'error': create_msg
+                            })
+                        return {
+                            'idx': idx,
+                            'device': device,
+                            'result': 'failed',
+                            'message': create_msg[:50]
+                        }
                     
                     # Set device keys
-                    keys_set, keys_msg = client.create_device_keys(
+                    keys_set, keys_msg = thread_client.create_device_keys(
                         dev_eui=device['dev_eui'],
                         nwk_key=device['nwk_key'],
                         app_key=device['app_key'] if device['app_key'] else None
                     )
                     
+                    thread_client.close()
+                    
                     if not keys_set:
-                        results['successful'].append({
-                            'dev_eui': device['dev_eui'],
-                            'name': device['name'],
-                            'warning': f'Device created but keys not set: {keys_msg}'
-                        })
-                        yield f"data: {json.dumps({'status': 'processing', 'current': idx, 'total': total, 'device': device['name'], 'dev_eui': device['dev_eui'], 'result': 'warning', 'message': 'Keys nicht gesetzt'})}\n\n"
-                    else:
+                        with results_lock:
+                            results['successful'].append({
+                                'dev_eui': device['dev_eui'],
+                                'name': device['name'],
+                                'warning': f'Device created but keys not set: {keys_msg}'
+                            })
+                        return {
+                            'idx': idx,
+                            'device': device,
+                            'result': 'warning',
+                            'message': 'Keys nicht gesetzt'
+                        }
+                    
+                    with results_lock:
                         results['successful'].append({
                             'dev_eui': device['dev_eui'],
                             'name': device['name']
                         })
-                        yield f"data: {json.dumps({'status': 'processing', 'current': idx, 'total': total, 'device': device['name'], 'dev_eui': device['dev_eui'], 'result': 'success', 'message': 'Erfolgreich'})}\n\n"
+                    
+                    return {
+                        'idx': idx,
+                        'device': device,
+                        'result': 'success',
+                        'message': 'Erfolgreich'
+                    }
                 
                 except Exception as e:
-                    results['failed'].append({
-                        'dev_eui': device['dev_eui'],
-                        'name': device['name'],
-                        'error': str(e)
-                    })
-                    yield f"data: {json.dumps({'status': 'processing', 'current': idx, 'total': total, 'device': device['name'], 'dev_eui': device.get('dev_eui', 'N/A'), 'result': 'failed', 'message': str(e)[:50]})}\n\n"
+                    logger.error(f"[Worker-{idx}] Exception: {str(e)}", exc_info=True)
+                    with results_lock:
+                        results['failed'].append({
+                            'dev_eui': device.get('dev_eui', 'N/A'),
+                            'name': device.get('name', 'N/A'),
+                            'error': str(e)
+                        })
+                    return {
+                        'idx': idx,
+                        'device': device,
+                        'result': 'failed',
+                        'message': str(e)[:50]
+                    }
+            
+            # Use ThreadPoolExecutor for parallel processing (10 worker threads)
+            num_workers = min(10, max(1, total // 20))  # Scale workers based on device count
+            logger.info(f"Starting parallel registration with {num_workers} workers for {total} devices")
+            
+            with ThreadPoolExecutor(max_workers=num_workers) as executor:
+                # Map the worker function to all devices
+                futures = {executor.submit(register_single_device, (idx + 1, device)): idx 
+                          for idx, device in enumerate(devices_to_register)}
+                
+                # Process results as they complete
+                for future in as_completed(futures):
+                    try:
+                        result = future.result()
+                        idx = result['idx']
+                        device = result['device']
+                        
+                        completed_count[0] += 1
+                        
+                        yield f"data: {json.dumps({
+                            'status': 'processing',
+                            'current': completed_count[0],
+                            'total': total,
+                            'device': device['name'],
+                            'dev_eui': device['dev_eui'],
+                            'result': result['result'],
+                            'message': result['message']
+                        })}\n\n"
+                        
+                    except Exception as e:
+                        logger.error(f"Error processing future: {str(e)}", exc_info=True)
+                        completed_count[0] += 1
+                        yield f"data: {json.dumps({
+                            'status': 'processing',
+                            'current': completed_count[0],
+                            'total': total,
+                            'result': 'failed',
+                            'message': f'Worker error: {str(e)[:50]}'
+                        })}\n\n"
+            
+            logger.info(f"Registration complete. Successful: {len(results['successful'])}, Failed: {len(results['failed'])}")
             
             # Store results in session
             session['registration_results'] = results
             
             # Send completion
-            yield f"data: {json.dumps({'status': 'complete', 'successful': len(results['successful']), 'failed': len(results['failed'])})}\n\n"
+            yield f"data: {json.dumps({
+                'status': 'complete',
+                'successful': len(results['successful']),
+                'failed': len(results['failed'])
+            })}\n\n"
             
-            client.close()
             
         except Exception as e:
             logger.error(f"Streaming error: {e}", exc_info=True)
