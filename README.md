@@ -1,112 +1,112 @@
 # LoRaWAN Device Registration Server
 
-A Flask web application for bulk registration of LoRaWAN devices to ChirpStack server using gRPC API.
+Eine Flask-Webanwendung zur Massenregistrierung von LoRaWAN-Geräten auf einem ChirpStack-Server mit gRPC-API.
 
-## 🚀 Quick Start
+## Schnellstart
 
-**No Python installation required!** Download the ready-to-use Windows executable from the [Releases](https://github.com/krusadejr/lorawan-registration-server/releases) page.
+Keine Python-Installation erforderlich! Laden Sie die vorkonfigurierte Windows-Anwendung aus der [Releases](https://github.com/krusadejr/lorawan-registration-server/releases) Seite herunter.
 
-### For End Users
-1. Download `LoRaWAN_Device_Registration.zip` from the latest release
-2. Extract and run `START_APPLICATION.bat`
-3. Open http://localhost:5000
-4. Configure ChirpStack settings and start registering devices!
+### Für Endbenutzer
+1. Laden Sie `LoRaWAN_Device_Registration.zip` aus der neuesten Version herunter
+2. Extrahieren und führen Sie `START_APPLICATION.bat` aus
+3. Öffnen Sie http://localhost:5000
+4. Konfigurieren Sie die ChirpStack-Einstellungen und beginnen Sie mit der Registrierung von Geräten
 
-### For Developers
-See [Documentations/README.md](Documentations/README.md) for detailed setup instructions.
-
----
-
-## 📚 Documentation
-
-All documentation is organized in the `Documentations/` folder:
-
-- **[README.md](Documentations/README.md)** - Full project documentation (English/German)
-- **[QUICK_START.md](Documentations/QUICK_START.md)** - Quick reference guide
-- **[FOLDER_STRUCTURE.md](Documentations/FOLDER_STRUCTURE.md)** - Project structure explanation
-- **[IMPLEMENTATION_PLAN.md](Documentations/IMPLEMENTATION_PLAN.md)** - Technical implementation details
-- **[OPTIMIZATIONS.md](Documentations/OPTIMIZATIONS.md)** - Performance optimization notes
+### Für Entwickler
+Weitere Informationen finden Sie unter [Documentations/README.md](Documentations/README.md).
 
 ---
 
-## ✨ Features
+## Dokumentation
 
-- Multi-format file support (Excel, CSV, JSON, TXT)
-- Automatic CSV delimiter detection
-- Flexible column mapping
-- Bulk device registration with real-time progress
-- Configuration history with autocomplete
-- Modern dark UI with responsive design
+Die gesamte Dokumentation ist im Ordner `Documentations/` organisiert:
 
----
-
-## 🛠️ Technology Stack
-
-- **Backend**: Python 3.13.4, Flask
-- **Communication**: gRPC, Protocol Buffers
-- **Data Processing**: pandas, openpyxl
-- **Frontend**: Bulma CSS, JavaScript
-- **Distribution**: PyInstaller (standalone executable)
+- [README.md](Documentations/README.md) - Vollständige Projektdokumentation
+- [QUICK_START.md](Documentations/QUICK_START.md) - Schnellreferenz
+- [FOLDER_STRUCTURE.md](Documentations/FOLDER_STRUCTURE.md) - Projektstruktur Erklärung
+- [IMPLEMENTATION_PLAN.md](Documentations/IMPLEMENTATION_PLAN.md) - Technische Implementierungsdetails
+- [OPTIMIZATIONS.md](Documentations/OPTIMIZATIONS.md) - Performance-Optimierungsnoten
 
 ---
 
-## 📁 Project Structure
+## Funktionen
+
+- Unterstützung mehrerer Dateiformate (Excel, CSV, JSON, TXT)
+- Automatische CSV-Trennzeichen-Erkennung
+- Flexible Spaltenzuordnung
+- Massenregistrierung von Geräten mit Echtzeitfortschritt
+- Konfigurationsverlauf mit Autovervollständigung
+- Modernes dunkles Design mit responsiver Benutzeroberfläche
+
+---
+
+## Technologie-Stack
+
+- Backend: Python 3.13.4, Flask
+- Kommunikation: gRPC, Protocol Buffers
+- Datenverarbeitung: pandas, openpyxl
+- Frontend: Bulma CSS, JavaScript
+- Distribution: PyInstaller (eigenständige Anwendung)
+
+---
+
+## Projektstruktur
 
 ```
 .
-├── app.py                 # Main Flask application
-├── file_parser.py         # Multi-format file parsing
-├── grpc_client.py         # ChirpStack gRPC client
-├── Documentations/        # All project documentation
-├── templates/             # HTML templates
-├── static/                # CSS, icons, styles
-├── generated/             # gRPC protocol buffers
-├── PRIVATE/               # Local-only files (not tracked)
-└── dist/                  # Standalone executable
+├── app.py                 # Haupt-Flask-Anwendung
+├── file_parser.py         # Multi-Format-Datei-Analyse
+├── grpc_client.py         # ChirpStack gRPC-Client
+├── Documentations/        # Gesamte Projektdokumentation
+├── templates/             # HTML-Vorlagen
+├── static/                # CSS, Icons, Stile
+├── generated/             # gRPC-Protokoll-Buffer
+├── PRIVATE/               # Lokale Dateien (nicht verfolgbar)
+└── dist/                  # Eigenständige ausführbare Datei
 ```
 
-For detailed folder information, see [FOLDER_STRUCTURE.md](Documentations/FOLDER_STRUCTURE.md).
+Weitere Informationen zur Ordnerstruktur finden Sie unter [FOLDER_STRUCTURE.md](Documentations/FOLDER_STRUCTURE.md).
 
 ---
 
-## 🔧 Development Setup
+## Entwicklungs-Setup
 
 ```bash
-# Create virtual environment
+# Virtuelle Umgebung erstellen
 python -m venv venv
 
-# Activate (Windows)
+# Aktivieren (Windows)
 venv\Scripts\activate
 
-# Install dependencies
+# Abhängigkeiten installieren
 pip install -r requirements.txt
 
-# Run development server
+# Entwicklungsserver ausführen
 python app.py
 ```
 
-For more details, see [Documentations/README.md](Documentations/README.md).
+Weitere Details finden Sie unter [Documentations/README.md](Documentations/README.md).
 
 ---
 
-## 📊 Repository Structure
+## Repository-Struktur
 
-- **main** branch - Production-ready code
-- **PRIVATE/** folder - Local development files (not tracked)
-- **Documentations/** - All project documentation
-
----
-
-## 📝 License
-
-[Specify license type]
+- **main** Branch - Produktionsreifer Code
+- **PRIVATE/** Ordner - Lokale Entwicklungsdateien (nicht verfolgbar)
+- **Documentations/** - Gesamte Projektdokumentation
 
 ---
 
-## 👤 Author
+## Autor
 
-[Your Name/Organization]
+Ayush Kumar
 
 ---
 
-**Last Updated**: January 21, 2026
+## Anmerkung
+
+Dieses Projekt wurde als Abschlussarbeit des Master-Studiengangs Wirtschaftsinformatik an der Technischen Hochschule Brandenburg entwickelt.
+
+---
+
+Zuletzt aktualisiert: Februar 9, 2026
