@@ -933,10 +933,17 @@ def register_devices_stream():
             # Map columns to device fields
             devices_to_register = []
             for idx, row in df.iterrows():
+                # Handle application_id: use manual input if available, otherwise use column
+                app_id = ''
+                if column_mapping.get('manual_application_id'):
+                    app_id = column_mapping['manual_application_id']
+                elif column_mapping['application_id']:
+                    app_id = str(row[column_mapping['application_id']]).strip()
+                
                 device = {
                     'dev_eui': str(row[column_mapping['dev_eui']]).strip(),
                     'name': str(row[column_mapping['name']]).strip(),
-                    'application_id': str(row[column_mapping['application_id']]).strip(),
+                    'application_id': app_id,
                     'device_profile_id': str(row[column_mapping['device_profile_id']]).strip(),
                     'nwk_key': str(row[column_mapping['nwk_key']]).strip(),
                     'app_key': str(row[column_mapping['app_key']]).strip() if column_mapping.get('app_key') and column_mapping['app_key'] else '',
@@ -1194,10 +1201,17 @@ def register_devices():
     # Map columns to device fields
     devices_to_register = []
     for idx, row in df.iterrows():
+        # Handle application_id: use manual input if available, otherwise use column
+        app_id = ''
+        if column_mapping.get('manual_application_id'):
+            app_id = column_mapping['manual_application_id']
+        elif column_mapping['application_id']:
+            app_id = str(row[column_mapping['application_id']]).strip()
+        
         device = {
             'dev_eui': str(row[column_mapping['dev_eui']]).strip(),
             'name': str(row[column_mapping['name']]).strip(),
-            'application_id': str(row[column_mapping['application_id']]).strip(),
+            'application_id': app_id,
             'device_profile_id': str(row[column_mapping['device_profile_id']]).strip(),
             'nwk_key': str(row[column_mapping['nwk_key']]).strip(),
             'app_key': str(row[column_mapping['app_key']]).strip() if column_mapping.get('app_key') and column_mapping['app_key'] else '',
