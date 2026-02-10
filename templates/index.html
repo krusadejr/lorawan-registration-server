@@ -59,6 +59,14 @@
                             </span>
                             <span>Konfiguration ändern</span>
                         </a>
+                        {% if history and (history.server_urls or history.api_keys or history.tenant_ids) %}
+                        <a href="{{ url_for('last_sessions') }}" class="button is-link">
+                            <span class="icon">
+                                <i class="fas fa-history"></i>
+                            </span>
+                            <span>Letzte Sitzungen</span>
+                        </a>
+                        {% endif %}
                     </div>
                 </div>
             {% else %}

@@ -193,6 +193,83 @@ def clear_history():
     return redirect(url_for('index'))
 
 
+@app.route('/last-sessions')
+def last_sessions():
+    """Display last accessed server configurations."""
+    global SERVER_URL, API_CODE, TENANT_ID
+    
+    logger.info("="*80)
+    logger.info("LAST SESSIONS REQUEST")
+    logger.info("="*80)
+    
+    history = load_config_history()
+    logger.info(f"Loaded config history: {history}")
+    
+    # Create session list with combined configurations
+    sessions = []
+    
+    # Get the maximum number of sessions from the history
+    max_sessions = max(
+        len(history.get('server_urls', [])),
+        len(history.get('api_keys', [])),
+        len(history.get('tenant_ids', []))
+    )
+    
+    for i in range(min(max_sessions, MAX_HISTORY_ITEMS)):
+        session_data = {
+            'id': i,
+            'server_url': history.get('server_urls', [])[i] if i < len(history.get('server_urls', [])) else '',
+            'api_key': history.get('api_keys', [])[i] if i < len(history.get('api_keys', [])) else '',
+            'tenant_id': history.get('tenant_ids', [])[i] if i < len(history.get('tenant_ids', [])) else '',
+        }
+        sessions.append(session_data)
+    
+    logger.info(f"Prepared {len(sessions)} sessions for display")
+    
+    return render_template('last_sessions.html',
+                         sessions=sessions,
+                         current_server_url=SERVER_URL,
+                         current_api_key=API_CODE,
+                         current_tenant_id=TENANT_ID)
+
+
+@app.route('/load-session/<int:session_id>', methods=['POST'])
+def load_session(session_id):
+    """Load a saved server configuration session."""
+    global SERVER_URL, API_CODE, TENANT_ID
+    
+    logger.info("="*80)
+    logger.info(f"LOAD SESSION REQUEST: session_id={session_id}")
+    logger.info("="*80)
+    
+    history = load_config_history()
+    
+    # Validate session_id
+    if session_id >= len(history.get('server_urls', [])):
+        logger.error(f"Invalid session_id: {session_id}")
+        flash('Ungültige Session-ID', 'danger')
+        return redirect(url_for('last_sessions'))
+    
+    # Load session data
+    server_url = history.get('server_urls', [])[session_id] if session_id < len(history.get('server_urls', [])) else ''
+    api_key = history.get('api_keys', [])[session_id] if session_id < len(history.get('api_keys', [])) else ''
+    tenant_id = history.get('tenant_ids', [])[session_id] if session_id < len(history.get('tenant_ids', [])) else ''
+    
+    # Set global variables
+    if server_url:
+        SERVER_URL = server_url
+        logger.info(f"Loaded SERVER_URL: {SERVER_URL}")
+    if api_key:
+        API_CODE = api_key
+        logger.info(f"Loaded API_CODE (length: {len(API_CODE)})")
+    if tenant_id:
+        TENANT_ID = tenant_id
+        logger.info(f"Loaded TENANT_ID: {TENANT_ID}")
+    
+    flash(f'Session #{session_id + 1} geladen! Server-Konfiguration wiederhergestellt.', 'success')
+    return redirect(url_for('index'))
+
+
 @app.route('/test-connection')
 def test_connection():
     """Test connection to ChirpStack server."""
@@ -630,6 +707,10 @@ def column_mapping():
     logger.info(f"Sheet columns: {columns}")
     logger.info(f"Sheet has {len(df)} rows")
     
+    # Check if application_id column exists (case-insensitive)
+    has_application_id_column = any(col.lower() in ['application_id', 'app_id', 'applicationid'] for col in columns)
+    logger.info(f"Has application_id column: {has_application_id_column}")
+    
     # Generate preview HTML
     preview_html = df.head(5).to_html(
         classes='table is-bordered is-striped is-hoverable is-fullwidth',
@@ -643,7 +724,8 @@ def column_mapping():
                          selected_sheet=selected_sheet,
                          columns=columns,
                          row_count=len(df),
-                         preview_html=preview_html)
+                         preview_html=preview_html,
+                         has_application_id_column=has_application_id_column)
 
 
 @app.route('/process-mapping', methods=['POST'])
@@ -664,6 +746,12 @@ def process_mapping():
         'description': request.form.get('description', '')  # Optional
     }
     
+    # Get manual application_id if no column is selected
+    manual_application_id = request.form.get('manual_application_id', '').strip()
+    if manual_application_id:
+        column_mapping['manual_application_id'] = manual_application_id
+        logger.info(f"Manual application_id provided: {manual_application_id}")
+    
     # Get tag columns from form (user selected tags)
     tag_columns = request.form.getlist('tag_columns')
     logger.info(f"Tag columns selected: {tag_columns}")
@@ -675,9 +763,13 @@ def process_mapping():
     
     logger.info(f"Column mapping received: {column_mapping}")
     
-    # Validate required fields
-    required_fields = ['dev_eui', 'name', 'application_id', 'device_profile_id', 'nwk_key']
+    # Validate required fields (application_id can come from column or manual input)
+    required_fields = ['dev_eui', 'name', 'device_profile_id', 'nwk_key']
     missing_fields = [field for field in required_fields if not column_mapping[field]]
+    
+    # Check application_id: either from column or manual input
+    if not column_mapping['application_id'] and not manual_application_id:
+        missing_fields.append('application_id')
     
     if missing_fields:
         logger.error(f"Missing required fields: {missing_fields}")
@@ -736,10 +828,17 @@ def registration_preview():
     # Map columns to device fields
     mapped_devices = []
     for idx, row in df.iterrows():
+        # Handle application_id: use manual input if available, otherwise use column
+        app_id = ''
+        if column_mapping.get('manual_application_id'):
+            app_id = column_mapping['manual_application_id']
+        elif column_mapping['application_id']:
+            app_id = str(row[column_mapping['application_id']])
+        
         device = {
             'dev_eui': str(row[column_mapping['dev_eui']]) if column_mapping['dev_eui'] else '',
             'name': str(row[column_mapping['name']]) if column_mapping['name'] else '',
-            'application_id': str(row[column_mapping['application_id']]) if column_mapping['application_id'] else '',
+            'application_id': app_id,
             'device_profile_id': str(row[column_mapping['device_profile_id']]) if column_mapping['device_profile_id'] else '',
             'nwk_key': str(row[column_mapping['nwk_key']]) if column_mapping['nwk_key'] else '',
             'app_key': str(row[column_mapping['app_key']]) if column_mapping.get('app_key') and column_mapping['app_key'] else '',
