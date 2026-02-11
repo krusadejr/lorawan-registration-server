@@ -59,14 +59,12 @@
                             </span>
                             <span>Konfiguration ändern</span>
                         </a>
-                        {% if history and (history.server_urls or history.api_keys or history.tenant_ids) %}
                         <a href="{{ url_for('last_sessions') }}" class="button is-link">
                             <span class="icon">
                                 <i class="fas fa-history"></i>
                             </span>
                             <span>Letzte Sitzungen</span>
                         </a>
-                        {% endif %}
                     </div>
                 </div>
             {% else %}
@@ -82,6 +80,12 @@
                                 <i class="fas fa-cog"></i>
                             </span>
                             <span>Server jetzt konfigurieren</span>
+                        </a>
+                        <a href="{{ url_for('last_sessions') }}" class="button is-link is-outlined">
+                            <span class="icon">
+                                <i class="fas fa-history"></i>
+                            </span>
+                            <span>Letzte Sitzungen laden</span>
                         </a>
                     </div>
                 </div>
