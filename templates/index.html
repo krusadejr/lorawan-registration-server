@@ -178,6 +178,31 @@
                 </div>
             </form>
         </div>
+
+        <!-- Upload Cache Information -->
+        <div class="notification is-info dark-notification mt-5">
+            <p class="has-text-light mb-2">
+                <i class="fas fa-info-circle mr-2"></i>
+                <strong>Upload-Cache Information</strong>
+            </p>
+            <div class="content has-text-light is-small">
+                <p>
+                    Die Anwendung behält automatisch die <strong>letzten 20 hochgeladenen Dateien</strong> in einem lokalen Cache. 
+                    Ältere Dateien werden automatisch gelöscht, um Speicherplatz zu sparen.
+                </p>
+                <p>
+                    <strong>Aktueller Status:</strong>
+                </p>
+                <ul>
+                    <li>Dateien im Cache: <strong>{{ cache_status.file_count }}</strong> / 20</li>
+                    <li>Speicherplatz: <strong>{{ cache_status.size_mb }} MB</strong></li>
+                </ul>
+                <p class="mb-0">
+                    <i class="fas fa-check-circle" style="color: #48c774;"></i>
+                    Cache-Cleanup läuft automatisch beim Start der Anwendung.
+                </p>
+            </div>
+        </div>
     </div>
 </div>
 

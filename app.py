@@ -45,10 +45,93 @@ logger.info("="*80)
 logger.info("Application started")
 logger.info("="*80)
 
+# Run cache cleanup on startup (keep last 20 files)
+logger.info("Running upload cache cleanup...")
+deleted, freed = cleanup_upload_cache(keep_count=20)
+if deleted > 0:
+    logger.info(f"Cleanup on startup: Deleted {deleted} old files, freed {freed / 1024 / 1024:.2f} MB")
+else:
+    logger.info("Upload cache OK - within retention limit")
+
 # Global variables to store server configuration
 SERVER_URL = None               # ChirpStack server URL
 API_CODE = None                 # API key for authentication
 TENANT_ID = None                # Tenant ID
+
+
+def cleanup_upload_cache(keep_count=20):
+    """
+    Clean up old upload files, keeping only the last N files.
+    This prevents unlimited disk space usage from accumulated uploads.
+    """
+    try:
+        if not os.path.exists(UPLOAD_FOLDER):
+            return 0, 0
+        
+        # Get all files in upload folder
+        all_files = []
+        for filename in os.listdir(UPLOAD_FOLDER):
+            filepath = os.path.join(UPLOAD_FOLDER, filename)
+            if os.path.isfile(filepath):
+                # Get modification time
+                mtime = os.path.getmtime(filepath)
+                all_files.append((filepath, mtime, filename))
+        
+        # If we have more than keep_count files, delete the oldest ones
+        if len(all_files) > keep_count:
+            # Sort by modification time (newest first)
+            all_files.sort(key=lambda x: x[1], reverse=True)
+            
+            # Files to delete are those beyond keep_count
+            files_to_delete = all_files[keep_count:]
+            deleted_count = 0
+            total_freed = 0
+            
+            for filepath, mtime, filename in files_to_delete:
+                try:
+                    file_size = os.path.getsize(filepath)
+                    os.remove(filepath)
+                    total_freed += file_size
+                    deleted_count += 1
+                    logger.info(f"Deleted old cache file: {filename} ({file_size} bytes)")
+                except Exception as e:
+                    logger.error(f"Error deleting file {filename}: {e}")
+            
+            if deleted_count > 0:
+                logger.info(f"Cache cleanup: Deleted {deleted_count} files, freed {total_freed / 1024 / 1024:.2f} MB")
+            
+            return deleted_count, total_freed
+        
+        return 0, 0
+    
+    except Exception as e:
+        logger.error(f"Error during cache cleanup: {e}")
+        return 0, 0
+
+
+def get_upload_cache_status():
+    """Get current upload cache statistics."""
+    try:
+        if not os.path.exists(UPLOAD_FOLDER):
+            return {'file_count': 0, 'total_size': 0, 'size_mb': 0}
+        
+        file_count = 0
+        total_size = 0
+        
+        for filename in os.listdir(UPLOAD_FOLDER):
+            filepath = os.path.join(UPLOAD_FOLDER, filename)
+            if os.path.isfile(filepath):
+                file_count += 1
+                total_size += os.path.getsize(filepath)
+        
+        return {
+            'file_count': file_count,
+            'total_size': total_size,
+            'size_mb': round(total_size / 1024 / 1024, 2)
+        }
+    except Exception as e:
+        logger.error(f"Error getting cache status: {e}")
+        return {'file_count': 0, 'total_size': 0, 'size_mb': 0}
 
 
 def load_config_history():
@@ -107,12 +190,14 @@ def index():
     """Home page with file upload form."""
     global SERVER_URL, API_CODE, TENANT_ID
     history = load_config_history()
+    cache_status = get_upload_cache_status()
     return render_template('index.html', 
                          server_url=SERVER_URL,
                          api_code=API_CODE,
                          tenant_id=TENANT_ID,
                          device_profile_id=None,
-                         history=history)
+                         history=history,
+                         cache_status=cache_status)
 
 
 @app.route('/server-config')
