@@ -1642,23 +1642,38 @@ def generate_registration_report(results):
         return None
 
 
-@app.route('/download-report')
+@app.route('/download-report', methods=['GET', 'POST'])
 def download_report():
     """Download registration results as Excel file."""
     try:
-        results = session.get('registration_results', {})
+        # Try to get results from POST data first, then session
+        results = None
+        
+        if request.method == 'POST':
+            results_data = request.form.get('resultsData')
+            if results_data:
+                try:
+                    results = json.loads(results_data)
+                    logger.info("Results retrieved from POST data")
+                except json.JSONDecodeError as e:
+                    logger.error(f"Failed to parse results data: {e}")
+        
+        # Fall back to session if POST data not available
+        if not results:
+            results = session.get('registration_results', {})
+            logger.info("Results retrieved from session")
         
         if not results:
             logger.warning("No registration results found for download")
             flash('Keine Registrierungsergebnisse zum Herunterladen gefunden.', 'error')
-            return redirect(url_for('registration_results'))
+            return redirect(url_for('index'))
         
         excel_file = generate_registration_report(results)
         
         if excel_file is None:
             logger.error("Failed to generate Excel report")
             flash('Fehler beim Erstellen des Berichts.', 'error')
-            return redirect(url_for('registration_results'))
+            return redirect(url_for('index'))
         
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         filename = f"LoRaWAN_Registration_Report_{timestamp}.xlsx"
@@ -1675,7 +1690,7 @@ def download_report():
     except Exception as e:
         logger.error(f"Error downloading report: {e}", exc_info=True)
         flash('Fehler beim Herunterladen des Berichts.', 'error')
-        return redirect(url_for('registration_results'))
+        return redirect(url_for('index'))
 
 
 @app.route('/registration-results')

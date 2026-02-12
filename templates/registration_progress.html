@@ -84,6 +84,11 @@
                 </p>
             </div>
 
+            <!-- Hidden Form to Store Results for Download -->
+            <form id="downloadForm" method="POST" action="{{ url_for('download_report') }}" style="display: none;">
+                <input type="hidden" id="resultsData" name="resultsData" value="">
+            </form>
+
             <!-- Detailed Results Section (hidden initially) -->
             <div id="detailedResults" style="display: none;">
                 <!-- Successful Devices -->
@@ -136,12 +141,12 @@
                 <!-- Action Buttons -->
                 <div class="field is-grouped is-grouped-centered mb-5">
                     <div class="control">
-                        <a href="{{ url_for('download_report') }}" class="button is-info is-large">
+                        <button type="button" class="button is-info is-large" onclick="downloadReport()">
                             <span class="icon">
                                 <i class="fas fa-file-excel"></i>
                             </span>
                             <span>Bericht herunterladen (Excel)</span>
-                        </a>
+                        </button>
                     </div>
                     <div class="control">
                         <a href="{{ url_for('index') }}" class="button is-primary is-large">
@@ -406,6 +411,14 @@ document.addEventListener('DOMContentLoaded', () => {
             failedCount.textContent = data.failed;
             completionMessage.style.display = 'block';
             
+            // Store results in hidden form for download
+            const resultsData = {
+                total: data.successful + data.failed,
+                successful: successfulDevices,
+                failed: failedDevices
+            };
+            document.getElementById('resultsData').value = JSON.stringify(resultsData);
+            
             // Display detailed results inline
             displayDetailedResults();
         }
@@ -466,5 +479,11 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 });
+
+// Function to download report
+function downloadReport() {
+    const form = document.getElementById('downloadForm');
+    form.submit();
+}
 </script>
 {% endblock %}
