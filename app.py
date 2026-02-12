@@ -517,53 +517,16 @@ def export_server_config():
         flash('Server-Konfiguration nicht vollständig. Bitte zuerst konfigurieren.', 'error')
         return redirect(url_for('server_config'))
     
-    # Create configuration content
+    # Create configuration content - simple format with full API key
     config_content = f"""LoRaWAN Registration Server - Configuration Details
 {'=' * 60}
 Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
 
 SERVER INFORMATION
 {'-' * 60}
-Server URL:            {SERVER_URL}
-Tenant ID:             {TENANT_ID if TENANT_ID else 'Not configured'}
-API Key (masked):      {API_CODE[:20] + '...' if API_CODE else 'Not configured'}
-
-INSTRUCTIONS
-{'-' * 60}
-1. Use the Server URL to connect to your ChirpStack instance
-2. The Tenant ID identifies your specific tenant
-3. Keep the API Key secure and do not share it
-4. This configuration is stored locally and not tracked in version control
-
-DEVICE REGISTRATION
-{'-' * 60}
-To register devices:
-1. Prepare a CSV or Excel file with the following columns:
-   - dev_eui (e.g., 0000000000000001)
-   - name (e.g., Sensor_Floor_1)
-   - application_id (UUID format)
-   - device_profile_id (UUID format)
-   - nwk_key (32-character hex string)
-   - app_key (32-character hex string)
-   - description (optional)
-   - tags (optional, format: key1:value1|key2:value2)
-
-2. Upload the file via the web interface
-3. Select the appropriate sheet and column mapping
-4. Review the preview
-5. Start the registration process
-6. Download the Excel report with results
-
-NOTES
-{'-' * 60}
-- Maximum recommended: 500 devices per registration
-- The application is designed for 1-2 concurrent users
-- Ensure ChirpStack server is running and accessible
-- Keep this file in a secure location
-- Do not commit this file to version control
-
-{'-' * 60}
-For more information, see the README or Help section in the application.
+Server URL:     {SERVER_URL}
+Tenant ID:      {TENANT_ID if TENANT_ID else 'Not configured'}
+API Key:        {API_CODE if API_CODE else 'Not configured'}
 """
     
     # Create file in memory
