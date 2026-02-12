@@ -86,6 +86,52 @@
                 {% endif %}
             </div>
 
+            <!-- Custom Tags Section -->
+            <div class="box" style="background-color: #1a1a2e; border: 1px solid #16a34a; margin-bottom: 1.5rem;">
+                <h3 class="subtitle is-5 has-text-light">
+                    <i class="fas fa-tags"></i>
+                    Benutzerdefinierte Tags (Optional - max. 4)
+                </h3>
+                <p class="has-text-grey-light mb-4">Diese Tags werden auf <strong>alle Geräte</strong> angewendet:</p>
+                
+                <div id="tagsContainer">
+                    <div class="tag-row mb-3">
+                        <div class="field is-grouped">
+                            <div class="control is-expanded">
+                                <label class="label has-text-grey-light is-small">Tag Name</label>
+                                <input type="text" class="input dark-input tag-name" placeholder="z.B. Abteilung" maxlength="50">
+                            </div>
+                            <div class="control is-expanded ml-3">
+                                <label class="label has-text-grey-light is-small">Tag Wert</label>
+                                <input type="text" class="input dark-input tag-value" placeholder="z.B. IT-Team" maxlength="100">
+                            </div>
+                            <div class="control">
+                                <label class="label" style="color: transparent;">Spacer</label>
+                                <button type="button" class="button is-danger is-outlined remove-tag" style="display: none;">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="field">
+                    <div class="control">
+                        <button type="button" id="addTagBtn" class="button is-info is-outlined">
+                            <span class="icon">
+                                <i class="fas fa-plus"></i>
+                            </span>
+                            <span>Tag hinzufügen</span>
+                        </button>
+                    </div>
+                </div>
+                
+                <p class="help has-text-grey-light">
+                    <i class="fas fa-info-circle"></i>
+                    Tags helfen bei der Verwaltung und Organisation Ihrer Geräte in ChirpStack.
+                </p>
+            </div>
+
             <!-- Registration Warning -->
             <div class="notification is-warning dark-notification mb-5">
                 <h3 class="subtitle is-5 has-text-dark">
@@ -105,6 +151,9 @@
 
             <!-- Action Buttons -->
             <form method="POST" action="{{ url_for('start_registration') }}" id="registrationForm">
+                <!-- Hidden input for custom tags (JSON) -->
+                <input type="hidden" id="customTagsInput" name="custom_tags" value="{}">
+                
                 <!-- Duplicate Handling Options -->
                 <div class="box" style="background-color: #1a1a2e; border: 1px solid #3273dc; margin-bottom: 1.5rem;">
                     <h3 class="subtitle is-5 has-text-light">
@@ -205,6 +254,101 @@
                 }
             });
         }
+
+        // Custom tags functionality
+        const addTagBtn = document.getElementById('addTagBtn');
+        const tagsContainer = document.getElementById('tagsContainer');
+        const registrationForm = document.getElementById('registrationForm');
+        const customTagsInput = document.getElementById('customTagsInput');
+
+        function updateRemoveButtons() {
+            const tagRows = tagsContainer.querySelectorAll('.tag-row');
+            tagRows.forEach((row, index) => {
+                const removeBtn = row.querySelector('.remove-tag');
+                removeBtn.style.display = tagRows.length > 1 ? 'block' : 'none';
+            });
+        }
+
+        function collectTags() {
+            const tags = {};
+            const tagRows = tagsContainer.querySelectorAll('.tag-row');
+            let count = 0;
+            
+            tagRows.forEach(row => {
+                const name = row.querySelector('.tag-name').value.trim();
+                const value = row.querySelector('.tag-value').value.trim();
+                
+                if (name && value) {
+                    tags[name] = value;
+                    count++;
+                }
+            });
+            
+            return { tags, count };
+        }
+
+        // Add tag row
+        addTagBtn.addEventListener('click', () => {
+            const { count } = collectTags();
+            
+            if (count >= 4) {
+                alert('Maximum 4 Tags erlaubt!');
+                return;
+            }
+
+            const newRow = document.createElement('div');
+            newRow.className = 'tag-row mb-3';
+            newRow.innerHTML = `
+                <div class="field is-grouped">
+                    <div class="control is-expanded">
+                        <input type="text" class="input dark-input tag-name" placeholder="z.B. Abteilung" maxlength="50">
+                    </div>
+                    <div class="control is-expanded ml-3">
+                        <input type="text" class="input dark-input tag-value" placeholder="z.B. IT-Team" maxlength="100">
+                    </div>
+                    <div class="control">
+                        <button type="button" class="button is-danger is-outlined remove-tag">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            `;
+            
+            tagsContainer.appendChild(newRow);
+            updateRemoveButtons();
+            
+            // Add remove event listener
+            newRow.querySelector('.remove-tag').addEventListener('click', (e) => {
+                e.preventDefault();
+                newRow.remove();
+                updateRemoveButtons();
+            });
+        });
+
+        // Remove tag row
+        tagsContainer.addEventListener('click', (e) => {
+            if (e.target.closest('.remove-tag')) {
+                e.preventDefault();
+                e.target.closest('.tag-row').remove();
+                updateRemoveButtons();
+            }
+        });
+
+        // Collect tags before form submission
+        registrationForm.addEventListener('submit', (e) => {
+            const { tags, count } = collectTags();
+            
+            if (count > 4) {
+                e.preventDefault();
+                alert('Maximum 4 Tags erlaubt!');
+                return;
+            }
+            
+            customTagsInput.value = JSON.stringify(tags);
+        });
+
+        // Initial update
+        updateRemoveButtons();
     });
 </script>
 {% endblock %}

@@ -886,6 +886,16 @@ def start_registration():
     duplicate_action = request.form.get('duplicate_action', 'skip')
     session['duplicate_action'] = duplicate_action
     
+    # Store custom tags in session
+    custom_tags_json = request.form.get('custom_tags', '{}')
+    try:
+        custom_tags = json.loads(custom_tags_json)
+    except json.JSONDecodeError:
+        custom_tags = {}
+    
+    session['custom_tags'] = custom_tags
+    logger.info(f"Custom tags set: {custom_tags}")
+    
     return render_template('registration_progress.html', duplicate_action=duplicate_action)
 
 
@@ -930,6 +940,10 @@ def register_devices_stream():
             
             df = pd.DataFrame(parsed_data[selected_sheet])
             
+            # Get custom tags from session
+            custom_tags = session.get('custom_tags', {})
+            logger.info(f"Custom tags from session: {custom_tags}")
+            
             # Map columns to device fields
             devices_to_register = []
             for idx, row in df.iterrows():
@@ -950,13 +964,18 @@ def register_devices_stream():
                     'description': str(row[column_mapping['description']]).strip() if column_mapping.get('description') and column_mapping['description'] else ''
                 }
                 
-                # Extract tags
+                # Extract tags from columns
                 tags = {}
                 if column_mapping.get('tags'):
                     for tag_col in column_mapping['tags']:
                         tag_value = str(row[tag_col]).strip() if tag_col in row and pd.notna(row[tag_col]) else ''
                         if tag_value:  # Only add non-empty tags
                             tags[tag_col] = tag_value
+                
+                # Add custom tags (these are user-defined and apply to all devices)
+                if custom_tags:
+                    tags.update(custom_tags)
+                    logger.info(f"Device {device['dev_eui']} tags after custom merge: {tags}")
                 
                 device['tags'] = tags
                 devices_to_register.append(device)
@@ -981,8 +1000,16 @@ def register_devices_stream():
                     from grpc_client import ChirpStackClient
                     thread_client = ChirpStackClient(SERVER_URL, API_CODE)
                     
+                    logger.info(f"[Worker-{idx}] === STARTING DEVICE REGISTRATION ===")
+                    logger.info(f"[Worker-{idx}] Device: {device['dev_eui']} ({device.get('name', 'NO_NAME')})")
+                    logger.info(f"[Worker-{idx}] Application ID: {device.get('application_id', 'NO_APP_ID')}")
+                    logger.info(f"[Worker-{idx}] Device Profile ID: {device.get('device_profile_id', 'NO_PROFILE_ID')}")
+                    
                     connected, conn_msg = thread_client.connect()
+                    logger.info(f"[Worker-{idx}] Connection result: connected={connected}, msg={conn_msg}")
+                    
                     if not connected:
+                        logger.error(f"[Worker-{idx}] Connection failed")
                         return {
                             'idx': idx,
                             'device': device,
@@ -995,6 +1022,7 @@ def register_devices_stream():
                     logger.info(f"[Worker-{idx}] Device {device['dev_eui']}: exists={device_exists}, action={duplicate_action}")
                     
                     if device_exists and duplicate_action == 'skip':
+                        logger.info(f"[Worker-{idx}] Device exists and action is skip - adding to failed list")
                         with results_lock:
                             results['failed'].append({
                                 'dev_eui': device['dev_eui'],
@@ -1009,8 +1037,10 @@ def register_devices_stream():
                         }
                     
                     if device_exists and duplicate_action == 'replace':
+                        logger.info(f"[Worker-{idx}] Device exists and action is replace - deleting device")
                         deleted, del_msg = thread_client.delete_device(device['dev_eui'])
                         if not deleted:
+                            logger.error(f"[Worker-{idx}] Failed to delete: {del_msg}")
                             with results_lock:
                                 results['failed'].append({
                                     'dev_eui': device['dev_eui'],
@@ -1026,6 +1056,7 @@ def register_devices_stream():
                         logger.info(f"[Worker-{idx}] Device {device['dev_eui']} deleted successfully")
                     
                     # Create device
+                    logger.info(f"[Worker-{idx}] CALLING create_device...")
                     device_created, create_msg = thread_client.create_device(
                         dev_eui=device['dev_eui'],
                         name=device['name'],
@@ -1034,14 +1065,17 @@ def register_devices_stream():
                         description=device['description'],
                         tags=device.get('tags', {}) if device.get('tags') else None
                     )
+                    logger.info(f"[Worker-{idx}] create_device returned: created={device_created}, msg={create_msg}")
                     
                     if not device_created:
+                        logger.error(f"[Worker-{idx}] Device creation failed: {create_msg}")
                         with results_lock:
                             results['failed'].append({
                                 'dev_eui': device['dev_eui'],
                                 'name': device['name'],
                                 'error': create_msg
                             })
+                        logger.info(f"[Worker-{idx}] Device added to FAILED list (total failed now: {len(results['failed'])})")
                         return {
                             'idx': idx,
                             'device': device,
@@ -1050,21 +1084,25 @@ def register_devices_stream():
                         }
                     
                     # Set device keys
+                    logger.info(f"[Worker-{idx}] CALLING create_device_keys...")
                     keys_set, keys_msg = thread_client.create_device_keys(
                         dev_eui=device['dev_eui'],
                         nwk_key=device['nwk_key'],
                         app_key=device['app_key'] if device['app_key'] else None
                     )
+                    logger.info(f"[Worker-{idx}] create_device_keys returned: set={keys_set}, msg={keys_msg}")
                     
                     thread_client.close()
                     
                     if not keys_set:
+                        logger.warning(f"[Worker-{idx}] Keys not set but device was created - adding to successful (with warning)")
                         with results_lock:
                             results['successful'].append({
                                 'dev_eui': device['dev_eui'],
                                 'name': device['name'],
                                 'warning': f'Device created but keys not set: {keys_msg}'
                             })
+                        logger.info(f"[Worker-{idx}] Device added to SUCCESSFUL list (total successful now: {len(results['successful'])})")
                         return {
                             'idx': idx,
                             'device': device,
@@ -1072,11 +1110,13 @@ def register_devices_stream():
                             'message': 'Keys nicht gesetzt'
                         }
                     
+                    logger.info(f"[Worker-{idx}] SUCCESS - Device fully created and keys set, adding to successful list")
                     with results_lock:
                         results['successful'].append({
                             'dev_eui': device['dev_eui'],
                             'name': device['name']
                         })
+                    logger.info(f"[Worker-{idx}] Device added to SUCCESSFUL list (total successful now: {len(results['successful'])})")
                     
                     return {
                         'idx': idx,
@@ -1086,13 +1126,14 @@ def register_devices_stream():
                     }
                 
                 except Exception as e:
-                    logger.error(f"[Worker-{idx}] Exception: {str(e)}", exc_info=True)
+                    logger.error(f"[Worker-{idx}] EXCEPTION occurred: {str(e)}", exc_info=True)
                     with results_lock:
                         results['failed'].append({
                             'dev_eui': device.get('dev_eui', 'N/A'),
                             'name': device.get('name', 'N/A'),
                             'error': str(e)
                         })
+                    logger.info(f"[Worker-{idx}] Device added to FAILED list due to exception (total failed now: {len(results['failed'])})")
                     return {
                         'idx': idx,
                         'device': device,
@@ -1139,7 +1180,14 @@ def register_devices_stream():
                             'message': f'Worker error: {str(e)[:50]}'
                         })}\n\n"
             
-            logger.info(f"Registration complete. Successful: {len(results['successful'])}, Failed: {len(results['failed'])}")
+            logger.info(f"="*80)
+            logger.info(f"REGISTRATION COMPLETE - FINAL SUMMARY")
+            logger.info(f"="*80)
+            logger.info(f"Successful: {len(results['successful'])}")
+            logger.info(f"Failed: {len(results['failed'])}")
+            logger.info(f"Successful devices: {[d['dev_eui'] for d in results['successful']]}")
+            logger.info(f"Failed devices: {[(d['dev_eui'], d.get('error', 'N/A')) for d in results['failed']]}")
+            logger.info(f"="*80)
             
             # Store results in session
             session['registration_results'] = results
