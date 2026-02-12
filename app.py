@@ -1930,6 +1930,104 @@ def api_list_devices():
         return {'success': False, 'message': str(e)}, 500
 
 
+@app.route('/api/generate-selected-devices-report', methods=['POST'])
+def api_generate_selected_devices_report():
+    """Generate Excel report for selected existing devices."""
+    global SERVER_URL, API_CODE
+    
+    try:
+        # Get list of dev_euis from request
+        dev_euis_str = request.form.get('dev_euis', '').strip()
+        
+        if not dev_euis_str:
+            logger.warning("No devices selected for report generation")
+            return {'success': False, 'message': 'Keine Geräte ausgewählt'}, 400
+        
+        # Parse dev_euis (comma-separated)
+        dev_euis = [eui.strip() for eui in dev_euis_str.split(',') if eui.strip()]
+        
+        if not dev_euis:
+            return {'success': False, 'message': 'Keine gültigen Geräte-EUIs'}, 400
+        
+        logger.info(f"=== GENERATE SELECTED DEVICES REPORT ===")
+        logger.info(f"Requested devices: {len(dev_euis)}")
+        
+        # Create gRPC client
+        from grpc_client import ChirpStackClient
+        client = ChirpStackClient(SERVER_URL, API_CODE)
+        
+        # Connect
+        connected, conn_msg = client.connect()
+        if not connected:
+            logger.error(f"Connection failed: {conn_msg}")
+            return {'success': False, 'message': f'Verbindung fehlgeschlagen: {conn_msg}'}, 500
+        
+        # Fetch each device's full data
+        devices = []
+        for dev_eui in dev_euis:
+            success, device_data = client.get_device(dev_eui)
+            
+            if success:
+                # Format as registration result
+                devices.append({
+                    'dev_eui': device_data['dev_eui'],
+                    'name': device_data['name'],
+                    'status': 'success',
+                    'details': 'Loaded from existing devices',
+                    'application_id': device_data.get('application_id', 'N/A'),
+                    'device_profile_id': device_data.get('device_profile_id', 'N/A'),
+                    'description': device_data.get('description', ''),
+                    'tags': device_data.get('tags', {})
+                })
+                logger.info(f"✓ Loaded device: {dev_eui}")
+            else:
+                logger.warning(f"✗ Failed to load device: {dev_eui}")
+        
+        client.close()
+        
+        if not devices:
+            return {'success': False, 'message': 'Keine Geräte konnten geladen werden'}, 400
+        
+        logger.info(f"Successfully loaded {len(devices)} devices for report")
+        
+        # Format results for report generation
+        results = {
+            'successful': devices,
+            'failed': []
+        }
+        
+        # Generate report
+        excel_file = generate_registration_report(results)
+        
+        if excel_file is None:
+            logger.error("Failed to generate Excel report")
+            return {'success': False, 'message': 'Fehler beim Erstellen des Berichts'}, 500
+        
+        # Stream the file as a response
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        filename = f"LoRaWAN_Devices_Report_{timestamp}.xlsx"
+        
+        logger.info(f"Generated report: {filename}")
+        
+        # Read file content and return it via JSON response
+        excel_file.seek(0)
+        file_content = excel_file.read()
+        
+        # Encode as base64 for transfer
+        import base64
+        encoded_file = base64.b64encode(file_content).decode('utf-8')
+        
+        return {
+            'success': True,
+            'filename': filename,
+            'file_data': encoded_file
+        }
+        
+    except Exception as e:
+        logger.error(f"✗ Exception in api_generate_selected_devices_report: {type(e).__name__}: {str(e)}", exc_info=True)
+        return {'success': False, 'message': str(e)}, 500
+
+
 @app.route('/api/delete-devices-stream', methods=['POST'])
 def api_delete_devices_stream():
     """Stream device deletion progress using SSE."""

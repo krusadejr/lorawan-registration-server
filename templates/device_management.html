@@ -48,6 +48,14 @@
                     </button>
                 </div>
                 <div class="control">
+                    <button class="button is-info" id="reportBtn" onclick="generateSelectedReport()" disabled>
+                        <span class="icon">
+                            <i class="fas fa-file-excel"></i>
+                        </span>
+                        <span>Report für Ausgewählte</span>
+                    </button>
+                </div>
+                <div class="control">
                     <button class="button is-danger is-outlined" id="deleteAllDevicesBtn" onclick="deleteAll()" disabled>
                         <span class="icon">
                             <i class="fas fa-trash-alt"></i>
@@ -105,7 +113,7 @@
                                 </th>
                                 <th style="background-color: white; color: black; border: 1px solid #dbdbdb;">DevEUI</th>
                                 <th style="background-color: white; color: black; border: 1px solid #dbdbdb;">Name</th>
-                                <th style="background-color: white; color: black; border: 1px solid #dbdbdb;">Beschreibung</th>
+                                <th style="background-color: white; color: black; border: 1px solid #dbdbdb;">Tags</th>
                                 <th style="width: 120px; background-color: white; color: black; border: 1px solid #dbdbdb;">Aktionen</th>
                             </tr>
                         </thead>
@@ -183,6 +191,21 @@
 let currentDevices = [];
 let devicesToDelete = [];
 let deleteMode = 'selected'; // 'selected' or 'all'
+
+function formatTags(tagsObj) {
+    /**
+     * Format tags dictionary into a readable string.
+     * If tags is an object like {location: "floor1", type: "sensor"},
+     * returns "location: floor1, type: sensor"
+     */
+    if (!tagsObj || typeof tagsObj !== 'object' || Object.keys(tagsObj).length === 0) {
+        return '-';
+    }
+    
+    return Object.entries(tagsObj)
+        .map(([key, value]) => `${key}: ${value}`)
+        .join(', ');
+}
 
 function loadDevices() {
     const appId = document.getElementById('application_id').value.trim();
@@ -263,7 +286,7 @@ function displayDevices(devices) {
                 <code style="color: black;">${device.dev_eui}</code>
             </td>
             <td style="background-color: white; color: black; border: 1px solid #dbdbdb;">${device.name || '-'}</td>
-            <td style="background-color: white; color: black; border: 1px solid #dbdbdb;">${device.description || '-'}</td>
+            <td style="background-color: white; color: black; border: 1px solid #dbdbdb;">${formatTags(device.tags)}</td>
             <td style="background-color: white; color: black; border: 1px solid #dbdbdb;">
                 <button class="button is-small is-danger is-outlined" 
                         onclick="deleteSingleDevice('${device.dev_eui}')">
@@ -316,6 +339,7 @@ function toggleSelectAll() {
 function updateDeleteButton() {
     const checked = document.querySelectorAll('.device-checkbox:checked').length;
     document.getElementById('deleteAllBtn').disabled = checked === 0;
+    document.getElementById('reportBtn').disabled = checked === 0;
     
     // Update select all checkbox state
     const total = document.querySelectorAll('.device-checkbox').length;
@@ -348,6 +372,63 @@ function deleteAll() {
         `Möchten Sie wirklich ALLE ${devicesToDelete.length} Geräte löschen? Diese Aktion kann nicht rückgängig gemacht werden!`;
     
     openDeleteModal();
+}
+
+function generateSelectedReport() {
+    const checkboxes = document.querySelectorAll('.device-checkbox:checked');
+    const selectedDevEuis = Array.from(checkboxes).map(cb => cb.value);
+    
+    if (selectedDevEuis.length === 0) {
+        showError('Bitte wählen Sie mindestens ein Gerät aus.');
+        return;
+    }
+    
+    // Show loading
+    document.getElementById('reportBtn').classList.add('is-loading');
+    
+    // Send request to generate report
+    const formData = new FormData();
+    formData.append('dev_euis', selectedDevEuis.join(','));
+    
+    fetch('/api/generate-selected-devices-report', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        document.getElementById('reportBtn').classList.remove('is-loading');
+        
+        if (!data.success) {
+            showError(data.message || 'Fehler beim Erstellen des Berichts');
+            return;
+        }
+        
+        // Decode base64 file data and download
+        const binaryString = atob(data.file_data);
+        const bytes = new Uint8Array(binaryString.length);
+        for (let i = 0; i < binaryString.length; i++) {
+            bytes[i] = binaryString.charCodeAt(i);
+        }
+        
+        const blob = new Blob([bytes], {
+            type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        });
+        
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = data.filename;
+        document.body.appendChild(link);
+        link.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(link);
+        
+        showSuccess(`Report "${data.filename}" wurde erfolgreich heruntergeladen.`);
+    })
+    .catch(error => {
+        document.getElementById('reportBtn').classList.remove('is-loading');
+        showError('Fehler beim Erstellen des Berichts: ' + error);
+    });
 }
 
 function deleteSingleDevice(devEui) {

@@ -371,7 +371,8 @@ class ChirpStackClient:
                     'name': item.name,
                     'description': item.description,
                     'device_profile_id': item.device_profile_id,
-                    'device_profile_name': item.device_profile_name
+                    'device_profile_name': item.device_profile_name,
+                    'tags': dict(item.tags)
                 }
                 devices.append(device)
             
