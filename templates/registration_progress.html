@@ -108,6 +108,51 @@
                             </table>
                         </div>
                     </div>
+
+                <!-- Failed Devices -->
+                <div id="failedDevicesSection" style="display: none;">
+                    <div class="notification is-danger dark-notification mb-5">
+                        <h3 class="subtitle is-5 has-text-light">
+                            <i class="fas fa-times-circle"></i>
+                            Fehlgeschlagene Registrierungen (<span id="failedCountDetail">0</span>)
+                        </h3>
+                        <div class="table-container" style="max-height: 400px; overflow-y: auto;">
+                            <table style="width: 100%; background-color: white; border-collapse: collapse;">
+                                <thead>
+                                    <tr style="background-color: white;">
+                                        <th style="padding: 8px; text-align: left; border: 1px solid #ddd; color: black;">#</th>
+                                        <th style="padding: 8px; text-align: left; border: 1px solid #ddd; color: black;">Device EUI</th>
+                                        <th style="padding: 8px; text-align: left; border: 1px solid #ddd; color: black;">Name</th>
+                                        <th style="padding: 8px; text-align: left; border: 1px solid #ddd; color: black;">Fehler</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="failedDevicesBody">
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="field is-grouped is-grouped-centered mb-5">
+                    <div class="control">
+                        <a href="{{ url_for('download_report') }}" class="button is-info is-large">
+                            <span class="icon">
+                                <i class="fas fa-file-excel"></i>
+                            </span>
+                            <span>Bericht herunterladen (Excel)</span>
+                        </a>
+                    </div>
+                    <div class="control">
+                        <a href="{{ url_for('index') }}" class="button is-primary is-large">
+                            <span class="icon">
+                                <i class="fas fa-home"></i>
+                            </span>
+                            <span>Zurück zur Startseite</span>
+                        </a>
+                    </div>
+                </div>
+            </div>
                 </div>
 
                 <!-- Failed Devices -->

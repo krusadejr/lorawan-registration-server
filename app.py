@@ -17,6 +17,7 @@ from openpyxl.utils import get_column_letter
 
 app = Flask(__name__)
 app.secret_key = 'your-secret-key-change-this-in-production'
+app.config['TEMPLATES_AUTO_RELOAD'] = True  # Disable Jinja2 template caching
 
 # Configuration
 UPLOAD_FOLDER = 'uploads'
