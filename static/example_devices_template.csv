@@ -1,0 +1,6 @@
+DevEUI,Name,Application ID,Device Profile ID,NwkKey,AppKey,Description,Tags
+0000000000000001,Sensor_Floor_1,application-uuid-12345678,profile-uuid-87654321,00112233445566778899AABBCCDDEEFF,00112233445566778899AABBCCDDEEFF,Temperature sensor in floor 1,location:floor1|type:temp
+0000000000000002,Sensor_Floor_2,application-uuid-12345678,profile-uuid-87654321,11223344556677889900AABBCCDDEEFF,11223344556677889900AABBCCDDEEFF,Temperature sensor in floor 2,location:floor2|type:temp
+0000000000000003,Humidity_Room_A,application-uuid-12345678,profile-uuid-87654321,22334455667788990011AABBCCDDEEFF,22334455667788990011AABBCCDDEEFF,Humidity sensor in room A,location:roomA|type:humidity
+0000000000000004,Motion_Corridor,application-uuid-12345678,profile-uuid-87654321,33445566778899001122AABBCCDDEEFF,33445566778899001122AABBCCDDEEFF,Motion detector in main corridor,location:corridor|type:motion
+0000000000000005,Light_Sensor_Main,application-uuid-12345678,profile-uuid-87654321,44556677889900112233AABBCCDDEEFF,44556677889900112233AABBCCDDEEFF,Light level sensor in main area,location:main|type:light

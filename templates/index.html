@@ -65,6 +65,12 @@
                             </span>
                             <span>Letzte Sitzungen</span>
                         </a>
+                        <a href="{{ url_for('export_server_config') }}" class="button is-warning">
+                            <span class="icon">
+                                <i class="fas fa-download"></i>
+                            </span>
+                            <span>Konfiguration exportieren</span>
+                        </a>
                     </div>
                 </div>
             {% else %}
