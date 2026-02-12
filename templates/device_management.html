@@ -339,7 +339,7 @@ function displayDevices(devices) {
             <td style="background-color: white; color: black; border: 1px solid #dbdbdb;">${formatTags(device.tags)}</td>
             <td style="background-color: white; color: black; border: 1px solid #dbdbdb;">
                 <button class="button is-small is-info is-outlined" 
-                        onclick="openEditTagsModal('${device.dev_eui}', '${device.name}', JSON.stringify(${JSON.stringify(device.tags || {})}))">
+                        onclick="openEditTagsModalByEui('${device.dev_eui}')">
                     <span class="icon is-small">
                         <i class="fas fa-edit"></i>
                     </span>
@@ -508,14 +508,29 @@ function closeDeleteModal() {
     document.getElementById('deleteModal').classList.remove('is-active');
 }
 
-function openEditTagsModal(devEui, devName, tagsJson) {
+function openEditTagsModalByEui(devEui) {
+    /**
+     * Look up device from currentDevices array and open edit modal
+     */
+    const device = currentDevices.find(d => d.dev_eui === devEui);
+    if (!device) {
+        showError(`Gerät ${devEui} nicht gefunden`);
+        return;
+    }
+    
+    // Call the main modal opener with device data
+    openEditTagsModal(device.dev_eui, device.name, device.tags);
+}
+
+function openEditTagsModal(devEui, devName, tagsObj) {
+    /**
+     * Open the edit tags modal with device data
+     * tagsObj: device tags object (from device.tags)
+     */
     try {
-        // Parse tags from JSON string (already stringified)
-        const tagsObj = JSON.parse(tagsJson);
-        
         // Convert tags object to string format: key1:value1|key2:value2
         let tagsStr = '';
-        if (Object.keys(tagsObj).length > 0) {
+        if (tagsObj && typeof tagsObj === 'object' && Object.keys(tagsObj).length > 0) {
             tagsStr = Object.entries(tagsObj)
                 .map(([key, value]) => `${key}:${value}`)
                 .join('|');
@@ -530,7 +545,7 @@ function openEditTagsModal(devEui, devName, tagsJson) {
         document.getElementById('editTagsModal').classList.add('is-active');
     } catch (e) {
         console.error('Error opening edit tags modal:', e);
-        showError('Fehler beim Öffnen des Tags-Editors');
+        showError('Fehler beim Öffnen des Tags-Editors: ' + e.message);
     }
 }
 
