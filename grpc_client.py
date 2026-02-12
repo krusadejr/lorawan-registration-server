@@ -320,6 +320,88 @@ class ChirpStackClient:
         except Exception as e:
             return False, f"Error deleting device: {str(e)}"
     
+    def update_device(self, dev_eui, name=None, description=None, tags=None, 
+                     is_disabled=None, skip_fcnt_check=None, variables=None):
+        """
+        Update an existing device in ChirpStack
+        
+        Args:
+            dev_eui (str): Device EUI
+            name (str, optional): New device name
+            description (str, optional): New device description
+            tags (dict, optional): New tags (will be merged with existing tags)
+            is_disabled (bool, optional): Disable/enable device
+            skip_fcnt_check (bool, optional): Skip frame counter check
+            variables (dict, optional): New variables (will be merged with existing)
+            
+        Returns:
+            tuple: (success: bool, message: str)
+        """
+        try:
+            # First, get the existing device
+            success, device_data = self.get_device(dev_eui)
+            if not success:
+                return False, f"Could not retrieve device {dev_eui}: {device_data}"
+            
+            # Create device object with updated values
+            device = device_pb2.Device(
+                dev_eui=device_data['dev_eui'],
+                name=name if name is not None else device_data['name'],
+                description=description if description is not None else device_data['description'],
+                application_id=device_data['application_id'],
+                device_profile_id=device_data['device_profile_id'],
+                is_disabled=is_disabled if is_disabled is not None else device_data['is_disabled'],
+                skip_fcnt_check=skip_fcnt_check if skip_fcnt_check is not None else device_data['skip_fcnt_check']
+            )
+            
+            # Merge tags: start with existing, override with new
+            merged_tags = dict(device_data.get('tags', {}))
+            if tags:
+                merged_tags.update(tags)
+            
+            # Add merged tags to device
+            for key, value in merged_tags.items():
+                device.tags[key] = str(value)
+            
+            # Merge variables: start with existing, override with new
+            merged_variables = dict(device_data.get('variables', {}))
+            if variables:
+                merged_variables.update(variables)
+            
+            # Add merged variables to device
+            for key, value in merged_variables.items():
+                device.variables[key] = str(value)
+            
+            # Create update request
+            request = device_pb2.UpdateDeviceRequest(device=device)
+            
+            # Make gRPC call
+            self.stub.Update(request, metadata=self._get_metadata())
+            
+            return True, f"Device {dev_eui} updated successfully"
+            
+        except grpc.RpcError as e:
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"update_device gRPC error for {dev_eui}: code={e.code()}, details='{e.details()}'")
+            
+            if e.code() == grpc.StatusCode.UNAUTHENTICATED:
+                error_msg = "Authentication failed: API token is invalid."
+            elif e.code() == grpc.StatusCode.PERMISSION_DENIED:
+                error_msg = "Permission denied: API token lacks permission to update devices."
+            elif e.code() == grpc.StatusCode.NOT_FOUND:
+                error_msg = f"Device {dev_eui} not found on ChirpStack."
+            elif e.code() == grpc.StatusCode.INVALID_ARGUMENT:
+                error_msg = f"Invalid data: {e.details()}"
+            else:
+                error_msg = f"gRPC Error [{e.code().name}]: {e.details()}"
+            return False, error_msg
+        except Exception as e:
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"Exception in update_device: {type(e).__name__}: {str(e)}", exc_info=True)
+            return False, f"Error updating device: {str(e)}"
+    
     def list_devices(self, application_id="", limit=100, offset=0, search=""):
         """
         List devices from ChirpStack

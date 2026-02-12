@@ -187,6 +187,56 @@
     </div>
 </div>
 
+<!-- Edit Tags Modal -->
+<div class="modal" id="editTagsModal">
+    <div class="modal-background" onclick="closeEditTagsModal()"></div>
+    <div class="modal-card">
+        <header class="modal-card-head has-background-info">
+            <p class="modal-card-title has-text-white">
+                <i class="fas fa-tags"></i> Tags bearbeiten
+            </p>
+            <button class="delete" aria-label="close" onclick="closeEditTagsModal()"></button>
+        </header>
+        <section class="modal-card-body">
+            <div class="field">
+                <label class="label has-text-white">Geräte-EUI</label>
+                <div class="control">
+                    <input class="input" type="text" id="editDevEui" readonly>
+                </div>
+            </div>
+            
+            <div class="field">
+                <label class="label has-text-white">Geräte-Name</label>
+                <div class="control">
+                    <input class="input" type="text" id="editDevName" readonly>
+                </div>
+            </div>
+            
+            <div class="field">
+                <label class="label has-text-white">Tags</label>
+                <div class="control">
+                    <textarea class="textarea" id="editTagsInput" 
+                              placeholder="Format: key1:value1|key2:value2&#10;Beispiel: location:floor1|type:sensor|status:active"></textarea>
+                </div>
+                <p class="help has-text-grey-light">
+                    Format: <code>key:value</code> (mit | trennen)
+                </p>
+            </div>
+            
+            <div id="editTagsMessage" style="display: none;"></div>
+        </section>
+        <footer class="modal-card-foot" style="justify-content: flex-end;">
+            <button class="button" onclick="closeEditTagsModal()">Abbrechen</button>
+            <button class="button is-info" id="saveTagsBtn" onclick="saveDeviceTags()">
+                <span class="icon">
+                    <i class="fas fa-save"></i>
+                </span>
+                <span>Speichern</span>
+            </button>
+        </footer>
+    </div>
+</div>
+
 <script>
 let currentDevices = [];
 let devicesToDelete = [];
@@ -288,6 +338,12 @@ function displayDevices(devices) {
             <td style="background-color: white; color: black; border: 1px solid #dbdbdb;">${device.name || '-'}</td>
             <td style="background-color: white; color: black; border: 1px solid #dbdbdb;">${formatTags(device.tags)}</td>
             <td style="background-color: white; color: black; border: 1px solid #dbdbdb;">
+                <button class="button is-small is-info is-outlined" 
+                        onclick="openEditTagsModal('${device.dev_eui}', '${device.name}', JSON.stringify(${JSON.stringify(device.tags || {})}))">
+                    <span class="icon is-small">
+                        <i class="fas fa-edit"></i>
+                    </span>
+                </button>
                 <button class="button is-small is-danger is-outlined" 
                         onclick="deleteSingleDevice('${device.dev_eui}')">
                     <span class="icon is-small">
@@ -450,6 +506,100 @@ function openDeleteModal() {
 
 function closeDeleteModal() {
     document.getElementById('deleteModal').classList.remove('is-active');
+}
+
+function openEditTagsModal(devEui, devName, tagsJson) {
+    try {
+        // Parse tags from JSON string (already stringified)
+        const tagsObj = JSON.parse(tagsJson);
+        
+        // Convert tags object to string format: key1:value1|key2:value2
+        let tagsStr = '';
+        if (Object.keys(tagsObj).length > 0) {
+            tagsStr = Object.entries(tagsObj)
+                .map(([key, value]) => `${key}:${value}`)
+                .join('|');
+        }
+        
+        document.getElementById('editDevEui').value = devEui;
+        document.getElementById('editDevName').value = devName;
+        document.getElementById('editTagsInput').value = tagsStr;
+        document.getElementById('editTagsMessage').style.display = 'none';
+        document.getElementById('saveTagsBtn').disabled = false;
+        
+        document.getElementById('editTagsModal').classList.add('is-active');
+    } catch (e) {
+        console.error('Error opening edit tags modal:', e);
+        showError('Fehler beim Öffnen des Tags-Editors');
+    }
+}
+
+function closeEditTagsModal() {
+    document.getElementById('editTagsModal').classList.remove('is-active');
+    document.getElementById('editTagsMessage').style.display = 'none';
+}
+
+function saveDeviceTags() {
+    const devEui = document.getElementById('editDevEui').value.trim();
+    const tagsStr = document.getElementById('editTagsInput').value.trim();
+    
+    if (!devEui) {
+        showEditTagsError('Geräte-EUI ist erforderlich');
+        return;
+    }
+    
+    // Validate tags format if provided
+    if (tagsStr) {
+        const tagPairs = tagsStr.split('|');
+        for (let pair of tagPairs) {
+            pair = pair.trim();
+            if (!pair.includes(':')) {
+                showEditTagsError(`Ungültiges Format: "${pair}". Sollte sein: key:value`);
+                return;
+            }
+        }
+    }
+    
+    // Disable save button and show loading
+    document.getElementById('saveTagsBtn').disabled = true;
+    document.getElementById('saveTagsBtn').classList.add('is-loading');
+    
+    const formData = new FormData();
+    formData.append('dev_eui', devEui);
+    formData.append('tags', tagsStr);
+    
+    fetch('/api/update-device-tags', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        document.getElementById('saveTagsBtn').classList.remove('is-loading');
+        document.getElementById('saveTagsBtn').disabled = false;
+        
+        if (data.success) {
+            showSuccess(`Tags für Gerät ${devEui} erfolgreich aktualisiert`);
+            closeEditTagsModal();
+            // Reload devices to show updated tags
+            setTimeout(() => {
+                loadDevices();
+            }, 500);
+        } else {
+            showEditTagsError(data.message || 'Fehler beim Aktualisieren der Tags');
+        }
+    })
+    .catch(error => {
+        document.getElementById('saveTagsBtn').classList.remove('is-loading');
+        document.getElementById('saveTagsBtn').disabled = false;
+        showEditTagsError('Fehler beim Speichern der Tags: ' + error);
+    });
+}
+
+function showEditTagsError(message) {
+    const msgDiv = document.getElementById('editTagsMessage');
+    msgDiv.className = 'notification is-danger';
+    msgDiv.innerHTML = `<button class="delete" onclick="this.parentElement.style.display='none'"></button>${message}`;
+    msgDiv.style.display = 'block';
 }
 
 function confirmDelete() {

@@ -1930,6 +1930,74 @@ def api_list_devices():
         return {'success': False, 'message': str(e)}, 500
 
 
+@app.route('/api/update-device-tags', methods=['POST'])
+def api_update_device_tags():
+    """API endpoint to update device tags."""
+    global SERVER_URL, API_CODE
+    
+    try:
+        # Get parameters from request
+        dev_eui = request.form.get('dev_eui', '').strip()
+        tags_str = request.form.get('tags', '').strip()
+        
+        logger.info(f"=== UPDATE DEVICE TAGS REQUEST ===")
+        logger.info(f"Device EUI: '{dev_eui}'")
+        logger.info(f"Tags string: '{tags_str}'")
+        
+        # Validate dev_eui is provided
+        if not dev_eui:
+            logger.warning("Device EUI is required but was not provided")
+            return {'success': False, 'message': 'Device EUI ist erforderlich'}, 400
+        
+        # Parse tags from string format: "key1:value1|key2:value2"
+        tags_dict = {}
+        if tags_str:
+            try:
+                tag_pairs = [pair.strip() for pair in tags_str.split('|') if pair.strip()]
+                for pair in tag_pairs:
+                    if ':' not in pair:
+                        return {'success': False, 'message': f'Ungültiges Tag-Format: "{pair}". Format sollte sein: key:value'}, 400
+                    key, value = pair.split(':', 1)
+                    key = key.strip()
+                    value = value.strip()
+                    if not key:
+                        return {'success': False, 'message': 'Tag-Schlüssel kann nicht leer sein'}, 400
+                    tags_dict[key] = value
+            except Exception as e:
+                logger.error(f"Failed to parse tags: {e}")
+                return {'success': False, 'message': f'Fehler beim Parsen von Tags: {str(e)}'}, 400
+        
+        # Create gRPC client
+        from grpc_client import ChirpStackClient
+        client = ChirpStackClient(SERVER_URL, API_CODE)
+        logger.info(f"gRPC client created")
+        
+        # Connect
+        logger.info(f"Attempting to connect to ChirpStack...")
+        connected, conn_msg = client.connect()
+        if not connected:
+            logger.error(f"Connection failed: {conn_msg}")
+            return {'success': False, 'message': f'Verbindung fehlgeschlagen: {conn_msg}'}, 500
+        logger.info(f"Connected successfully: {conn_msg}")
+        
+        # Update device tags
+        logger.info(f"Calling update_device with dev_eui='{dev_eui}', tags={tags_dict}...")
+        success, message = client.update_device(dev_eui, tags=tags_dict)
+        
+        client.close()
+        
+        if success:
+            logger.info(f"✓ Successfully updated tags for device {dev_eui}")
+            return {'success': True, 'message': message}
+        else:
+            logger.error(f"✗ Failed to update device. Error: {message}")
+            return {'success': False, 'message': message}, 500
+            
+    except Exception as e:
+        logger.error(f"✗ Exception in api_update_device_tags: {type(e).__name__}: {str(e)}", exc_info=True)
+        return {'success': False, 'message': str(e)}, 500
+
+
 @app.route('/api/generate-selected-devices-report', methods=['POST'])
 def api_generate_selected_devices_report():
     """Generate Excel report for selected existing devices."""
