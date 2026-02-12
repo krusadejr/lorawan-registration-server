@@ -1255,6 +1255,8 @@ def register_devices_stream():
                             'total': total,
                             'device': device['name'],
                             'dev_eui': device['dev_eui'],
+                            'application_id': device.get('application_id', ''),
+                            'device_profile_id': device.get('device_profile_id', ''),
                             'result': result['result'],
                             'message': result['message']
                         })}\n\n"
@@ -1486,9 +1488,17 @@ def register_devices():
     return redirect(url_for('registration_results'))
 
 
-def generate_registration_report(results):
+def generate_registration_report(results, server_info=None):
     """Generate an Excel report with registration results."""
     try:
+        # Set defaults for server_info if not provided
+        if server_info is None:
+            server_info = {
+                'server_url': session.get('server_url', 'N/A'),
+                'api_code': session.get('api_code', 'N/A')[:20] + "..." if session.get('api_code') else 'N/A',
+                'tenant_id': session.get('tenant_id', 'N/A')
+            }
+        
         wb = Workbook()
         ws = wb.active
         ws.title = "Registration Report"
@@ -1524,14 +1534,14 @@ def generate_registration_report(results):
         ws[f'A{row}'].font = info_font
         row += 1
         
-        server_info = [
-            ("Server URL", session.get('server_url', 'N/A')),
-            ("API Code", session.get('api_code', 'N/A')[:20] + "..." if session.get('api_code') else 'N/A'),
-            ("Tenant ID", session.get('tenant_id', 'N/A')),
+        server_info_list = [
+            ("Server URL", server_info.get('server_url', 'N/A')),
+            ("API Code", server_info.get('api_code', 'N/A')),
+            ("Tenant ID", server_info.get('tenant_id', 'N/A')),
             ("Report Generated", datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
         ]
         
-        for label, value in server_info:
+        for label, value in server_info_list:
             ws[f'A{row}'].value = label
             ws[f'A{row}'].font = Font(bold=True)
             ws[f'B{row}'].value = value
@@ -1648,12 +1658,22 @@ def download_report():
     try:
         # Try to get results from POST data first, then session
         results = None
+        server_info = {}
         
         if request.method == 'POST':
             results_data = request.form.get('resultsData')
             if results_data:
                 try:
-                    results = json.loads(results_data)
+                    data = json.loads(results_data)
+                    results = {
+                        'successful': data.get('successful', []),
+                        'failed': data.get('failed', [])
+                    }
+                    server_info = {
+                        'server_url': data.get('server_url', 'N/A'),
+                        'api_code': data.get('api_code', 'N/A'),
+                        'tenant_id': data.get('tenant_id', 'N/A')
+                    }
                     logger.info("Results retrieved from POST data")
                 except json.JSONDecodeError as e:
                     logger.error(f"Failed to parse results data: {e}")
@@ -1661,6 +1681,11 @@ def download_report():
         # Fall back to session if POST data not available
         if not results:
             results = session.get('registration_results', {})
+            server_info = {
+                'server_url': session.get('server_url', 'N/A'),
+                'api_code': session.get('api_code', 'N/A')[:20] + "..." if session.get('api_code') else 'N/A',
+                'tenant_id': session.get('tenant_id', 'N/A')
+            }
             logger.info("Results retrieved from session")
         
         if not results:
@@ -1668,7 +1693,7 @@ def download_report():
             flash('Keine Registrierungsergebnisse zum Herunterladen gefunden.', 'error')
             return redirect(url_for('index'))
         
-        excel_file = generate_registration_report(results)
+        excel_file = generate_registration_report(results, server_info)
         
         if excel_file is None:
             logger.error("Failed to generate Excel report")

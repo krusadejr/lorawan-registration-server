@@ -372,13 +372,17 @@ document.addEventListener('DOMContentLoaded', () => {
                     dev_eui: data.dev_eui || 'N/A',
                     name: data.device,
                     status: data.message,
-                    warning: data.result === 'warning'
+                    warning: data.result === 'warning',
+                    application_id: data.application_id || 'N/A',
+                    device_profile_id: data.device_profile_id || 'N/A'
                 });
             } else if (data.result === 'failed') {
                 failedDevices.push({
                     dev_eui: data.dev_eui || 'N/A',
                     name: data.device,
-                    error: data.message
+                    error: data.message,
+                    application_id: data.application_id || 'N/A',
+                    device_profile_id: data.device_profile_id || 'N/A'
                 });
             }
             
@@ -415,7 +419,10 @@ document.addEventListener('DOMContentLoaded', () => {
             const resultsData = {
                 total: data.successful + data.failed,
                 successful: successfulDevices,
-                failed: failedDevices
+                failed: failedDevices,
+                server_url: '{{ session.get("server_url", "N/A") }}',
+                api_code: '{{ session.get("api_code", "N/A")[:20] }}{% if session.get("api_code") %}...{% endif %}',
+                tenant_id: '{{ session.get("tenant_id", "N/A") }}'
             };
             document.getElementById('resultsData').value = JSON.stringify(resultsData);
             
