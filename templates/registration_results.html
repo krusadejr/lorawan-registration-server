@@ -137,6 +137,14 @@
             <!-- Actions -->
             <div class="field is-grouped is-grouped-centered">
                 <div class="control">
+                    <a href="{{ url_for('download_report') }}" class="button is-info is-large">
+                        <span class="icon">
+                            <i class="fas fa-file-excel"></i>
+                        </span>
+                        <span>Bericht herunterladen (Excel)</span>
+                    </a>
+                </div>
+                <div class="control">
                     <a href="{{ url_for('index') }}" class="button is-primary is-large">
                         <span class="icon">
                             <i class="fas fa-home"></i>

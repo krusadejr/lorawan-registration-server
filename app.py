@@ -11,6 +11,9 @@ import time
 import io
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import threading
+from openpyxl import Workbook
+from openpyxl.styles import PatternFill, Font, Alignment, Border, Side
+from openpyxl.utils import get_column_letter
 
 app = Flask(__name__)
 app.secret_key = 'your-secret-key-change-this-in-production'
@@ -1480,6 +1483,198 @@ def register_devices():
     logger.info("="*80)
     
     return redirect(url_for('registration_results'))
+
+
+def generate_registration_report(results):
+    """Generate an Excel report with registration results."""
+    try:
+        wb = Workbook()
+        ws = wb.active
+        ws.title = "Registration Report"
+        
+        # Define colors and styles
+        header_fill = PatternFill(start_color="366092", end_color="366092", fill_type="solid")
+        header_font = Font(bold=True, color="FFFFFF", size=12)
+        success_fill = PatternFill(start_color="C6EFCE", end_color="C6EFCE", fill_type="solid")
+        success_font = Font(color="006100", bold=True)
+        failed_fill = PatternFill(start_color="FFC7CE", end_color="FFC7CE", fill_type="solid")
+        failed_font = Font(color="9C0006", bold=True)
+        info_font = Font(bold=True, size=11)
+        border = Border(
+            left=Side(style='thin'),
+            right=Side(style='thin'),
+            top=Side(style='thin'),
+            bottom=Side(style='thin')
+        )
+        center_alignment = Alignment(horizontal='center', vertical='center', wrap_text=True)
+        
+        row = 1
+        
+        # Title
+        ws.merge_cells(f'A{row}:F{row}')
+        cell = ws[f'A{row}']
+        cell.value = "LoRaWAN Device Registration Report"
+        cell.font = Font(bold=True, size=14)
+        cell.alignment = center_alignment
+        row += 2
+        
+        # Server Information Section
+        ws[f'A{row}'].value = "Server Information:"
+        ws[f'A{row}'].font = info_font
+        row += 1
+        
+        server_info = [
+            ("Server URL", session.get('server_url', 'N/A')),
+            ("API Code", session.get('api_code', 'N/A')[:20] + "..." if session.get('api_code') else 'N/A'),
+            ("Tenant ID", session.get('tenant_id', 'N/A')),
+            ("Report Generated", datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+        ]
+        
+        for label, value in server_info:
+            ws[f'A{row}'].value = label
+            ws[f'A{row}'].font = Font(bold=True)
+            ws[f'B{row}'].value = value
+            row += 1
+        
+        row += 1
+        
+        # Summary Section
+        successful_count = len(results.get('successful', []))
+        failed_count = len(results.get('failed', []))
+        total_count = successful_count + failed_count
+        
+        ws[f'A{row}'].value = "Summary:"
+        ws[f'A{row}'].font = info_font
+        row += 1
+        
+        ws[f'A{row}'].value = "Total Devices"
+        ws[f'B{row}'].value = total_count
+        ws[f'B{row}'].font = Font(bold=True)
+        row += 1
+        
+        ws[f'A{row}'].value = "Successful"
+        ws[f'B{row}'].value = successful_count
+        ws[f'B{row}'].font = success_font
+        ws[f'B{row}'].fill = success_fill
+        row += 1
+        
+        ws[f'A{row}'].value = "Failed"
+        ws[f'B{row}'].value = failed_count
+        ws[f'B{row}'].font = failed_font
+        ws[f'B{row}'].fill = failed_fill
+        row += 2
+        
+        # Device Details Table Header
+        headers = ["DevEUI", "Device Name", "Status", "Details", "Application ID", "Device Profile ID"]
+        for col_idx, header in enumerate(headers, 1):
+            cell = ws.cell(row=row, column=col_idx)
+            cell.value = header
+            cell.fill = header_fill
+            cell.font = header_font
+            cell.alignment = center_alignment
+            cell.border = border
+        
+        row += 1
+        
+        # Add successful devices
+        for device in results.get('successful', []):
+            ws.cell(row=row, column=1).value = device.get('dev_eui', 'N/A')
+            ws.cell(row=row, column=2).value = device.get('name', 'N/A')
+            
+            status_cell = ws.cell(row=row, column=3)
+            status_cell.value = "✓ SUCCESS"
+            status_cell.fill = success_fill
+            status_cell.font = success_font
+            status_cell.alignment = center_alignment
+            
+            details = device.get('warning', '')
+            ws.cell(row=row, column=4).value = details if details else "Device created and keys set"
+            
+            ws.cell(row=row, column=5).value = device.get('application_id', 'N/A')
+            ws.cell(row=row, column=6).value = device.get('device_profile_id', 'N/A')
+            
+            for col in range(1, 7):
+                ws.cell(row=row, column=col).border = border
+            
+            row += 1
+        
+        # Add failed devices
+        for device in results.get('failed', []):
+            ws.cell(row=row, column=1).value = device.get('dev_eui', 'N/A')
+            ws.cell(row=row, column=2).value = device.get('name', 'N/A')
+            
+            status_cell = ws.cell(row=row, column=3)
+            status_cell.value = "✗ FAILED"
+            status_cell.fill = failed_fill
+            status_cell.font = failed_font
+            status_cell.alignment = center_alignment
+            
+            error_msg = device.get('error', 'Unknown error')
+            ws.cell(row=row, column=4).value = error_msg
+            
+            ws.cell(row=row, column=5).value = "N/A"
+            ws.cell(row=row, column=6).value = "N/A"
+            
+            for col in range(1, 7):
+                ws.cell(row=row, column=col).border = border
+            
+            row += 1
+        
+        # Adjust column widths
+        ws.column_dimensions['A'].width = 20
+        ws.column_dimensions['B'].width = 25
+        ws.column_dimensions['C'].width = 15
+        ws.column_dimensions['D'].width = 30
+        ws.column_dimensions['E'].width = 20
+        ws.column_dimensions['F'].width = 20
+        
+        # Save to bytes
+        output = io.BytesIO()
+        wb.save(output)
+        output.seek(0)
+        
+        logger.info("Excel report generated successfully")
+        return output
+    
+    except Exception as e:
+        logger.error(f"Error generating Excel report: {e}", exc_info=True)
+        return None
+
+
+@app.route('/download-report')
+def download_report():
+    """Download registration results as Excel file."""
+    try:
+        results = session.get('registration_results', {})
+        
+        if not results:
+            logger.warning("No registration results found for download")
+            flash('Keine Registrierungsergebnisse zum Herunterladen gefunden.', 'error')
+            return redirect(url_for('registration_results'))
+        
+        excel_file = generate_registration_report(results)
+        
+        if excel_file is None:
+            logger.error("Failed to generate Excel report")
+            flash('Fehler beim Erstellen des Berichts.', 'error')
+            return redirect(url_for('registration_results'))
+        
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        filename = f"LoRaWAN_Registration_Report_{timestamp}.xlsx"
+        
+        logger.info(f"Sending Excel report: {filename}")
+        
+        return send_file(
+            excel_file,
+            mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            as_attachment=True,
+            download_name=filename
+        )
+    
+    except Exception as e:
+        logger.error(f"Error downloading report: {e}", exc_info=True)
+        flash('Fehler beim Herunterladen des Berichts.', 'error')
+        return redirect(url_for('registration_results'))
 
 
 @app.route('/registration-results')
