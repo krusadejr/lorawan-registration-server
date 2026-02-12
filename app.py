@@ -1632,26 +1632,6 @@ def generate_registration_report(results, server_info=None):
         cell.alignment = center_alignment
         row += 2
         
-        # Server Information Section
-        ws[f'A{row}'].value = "Server Information:"
-        ws[f'A{row}'].font = info_font
-        row += 1
-        
-        server_info_list = [
-            ("Server URL", server_info.get('server_url', 'N/A')),
-            ("API Code", server_info.get('api_code', 'N/A')),
-            ("Tenant ID", server_info.get('tenant_id', 'N/A')),
-            ("Report Generated", datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
-        ]
-        
-        for label, value in server_info_list:
-            ws[f'A{row}'].value = label
-            ws[f'A{row}'].font = Font(bold=True)
-            ws[f'B{row}'].value = value
-            row += 1
-        
-        row += 1
-        
         # Summary Section
         successful_count = len(results.get('successful', []))
         failed_count = len(results.get('failed', []))
