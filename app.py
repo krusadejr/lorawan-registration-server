@@ -45,14 +45,6 @@ logger.info("="*80)
 logger.info("Application started")
 logger.info("="*80)
 
-# Run cache cleanup on startup (keep last 20 files)
-logger.info("Running upload cache cleanup...")
-deleted, freed = cleanup_upload_cache(keep_count=20)
-if deleted > 0:
-    logger.info(f"Cleanup on startup: Deleted {deleted} old files, freed {freed / 1024 / 1024:.2f} MB")
-else:
-    logger.info("Upload cache OK - within retention limit")
-
 # Global variables to store server configuration
 SERVER_URL = None               # ChirpStack server URL
 API_CODE = None                 # API key for authentication
@@ -132,6 +124,15 @@ def get_upload_cache_status():
     except Exception as e:
         logger.error(f"Error getting cache status: {e}")
         return {'file_count': 0, 'total_size': 0, 'size_mb': 0}
+
+
+# Run cache cleanup on startup (keep last 20 files)
+logger.info("Running upload cache cleanup...")
+deleted, freed = cleanup_upload_cache(keep_count=20)
+if deleted > 0:
+    logger.info(f"Cleanup on startup: Deleted {deleted} old files, freed {freed / 1024 / 1024:.2f} MB")
+else:
+    logger.info("Upload cache OK - within retention limit")
 
 
 def load_config_history():
