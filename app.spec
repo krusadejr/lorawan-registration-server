@@ -10,7 +10,6 @@ a = Analysis(
         ('templates', 'templates'),
         ('static', 'static'),
         ('generated', 'generated'),
-        ('exampleDevicesAIGenerated', 'exampleDevicesAIGenerated'),
     ],
     hiddenimports=[
         'grpc',
