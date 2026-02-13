@@ -1,0 +1,67 @@
+TROUBLESHOOTING & SETUP GUIDE
+=============================
+
+**IMPORTANT: Always use START_APPLICATION.bat to run the application!**
+Do NOT double-click the LoRaWAN_Device_Registration.exe file directly.
+
+---
+
+## How to Start the Application (Correct Way)
+
+1. **Open the folder:** `dist/LoRaWAN_Device_Registration/`
+2. **Double-click:** `START_APPLICATION.bat`
+3. **Wait:** 10-15 seconds for the server to start
+4. **Open browser:** http://localhost:5000
+5. **To stop:** Press CTRL+C in the command window
+
+---
+
+## If the Application Won't Start
+
+### Step 1: Try the DEBUG Version
+- Double-click: `DEBUG_START.bat`
+- This will show error messages that help diagnose the problem
+- Take note of any error text and share with support
+
+### Step 2: Check Port 5000
+- The application uses port 5000
+- If another application is using it, close it first
+- Or wait 30 seconds and try again
+
+### Step 3: Windows Security
+- You may see "Windows protected your PC" warning
+- Click "More info" then "Run anyway" to continue
+- This is normal for executables not from the Microsoft Store
+
+### Step 4: First Launch May Be Slow
+- The application initializes databases and systems on first run
+- Wait 15-20 seconds before opening the browser
+
+---
+
+## Common Issues
+
+**Issue:** Browser says "Connection refused" or "Cannot reach server"
+→ Solution: Wait 20 seconds for server to fully start, then refresh browser (F5)
+
+**Issue:** "Address already in use" error
+→ Solution: Another copy is running. Close all batch windows and try again.
+
+**Issue:** Application starts but browser shows blank page
+→ Solution: Wait 10 more seconds and refresh (F5)
+
+**Issue:** Uploaded file causes error
+→ Solution: Check file format (CSV, XLSX, or JSON). Max size 50MB.
+
+---
+
+## Getting Help
+
+If you encounter errors:
+1. Run **DEBUG_START.bat**
+2. Copy all error messages that appear
+3. Share with technical support
+
+---
+
+Questions? The application logs are saved in the `logs/` folder for detailed debug info.

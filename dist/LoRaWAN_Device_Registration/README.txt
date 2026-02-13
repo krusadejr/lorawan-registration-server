@@ -9,19 +9,26 @@ DATE: November 17, 2025
 QUICK START / SCHNELLSTART
 ====================================================================
 
-1. Double-click "LoRaWAN_Device_Registration.exe"
-2. Wait a few seconds for the server to start
+ENGLISH:
+1. Double-click "START_APPLICATION.bat" (NOT the .exe file!)
+2. Wait 10-15 seconds for the server to start
 3. Open your web browser and go to: http://localhost:5000
 4. Configure your ChirpStack server settings
 5. Upload and register your devices!
 
+HINWEIS: Wenn Windows eine Sicherheitsmeldung anzeigt, klicken Sie auf "Trotzdem ausführen"
+(If Windows shows a security dialog, click through it)
+
 --------------------------------------------------------------------
 
-1. Doppelklick auf "LoRaWAN_Device_Registration.exe"
-2. Warten Sie einige Sekunden, bis der Server startet
+DEUTSCH:
+1. Doppelklick auf "START_APPLICATION.bat" (NICHT auf die .exe Datei!)
+2. Warten Sie 10-15 Sekunden, bis der Server startet
 3. Öffnen Sie Ihren Webbrowser und gehen Sie zu: http://localhost:5000
 4. Konfigurieren Sie Ihre ChirpStack-Server-Einstellungen
 5. Laden Sie Ihre Geräte hoch und registrieren Sie sie!
+
+HINWEIS: Wenn Windows eine Sicherheitsmeldung anzeigt, klicken Sie auf "Trotzdem ausführen"
 
 ====================================================================
 SYSTEM REQUIREMENTS / SYSTEMANFORDERUNGEN
