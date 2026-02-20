@@ -1095,8 +1095,7 @@ def registration_preview():
             'nwk_key': nwk_key_value,
             'app_key': str(row[column_mapping['app_key']]) if column_mapping.get('app_key') and column_mapping['app_key'] else '',
             'description': str(row[column_mapping['description']]) if column_mapping.get('description') and column_mapping['description'] else '',
-            'is_otaa': is_otaa,
-            'lorawan_version': lorawan_version_info  # NEW: Include version info
+            'is_otaa': is_otaa
         }
         
         # DEBUG: Log the extraction
