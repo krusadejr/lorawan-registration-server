@@ -1307,7 +1307,6 @@ def register_devices_stream():
             yield f"data: {json.dumps({'status': 'info', 'message': f'Benutzer hat LoRaWAN {selected_version_str} ausgewählt'})}\n\n"
             
             # Parse version string to dict
-            from grpc_client import ChirpStackClient
             version_parts = selected_version_str.split('.')
             lorawan_version_info = {
                 'version': selected_version_str,
