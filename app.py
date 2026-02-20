@@ -1208,6 +1208,17 @@ def registration_preview():
     server_configured = bool(SERVER_URL and API_CODE and TENANT_ID)
     logger.info(f"Server configured: {server_configured}")
     
+    # Available LoRaWAN versions for user to select
+    lorawan_versions = [
+        {'value': '1.0.0', 'label': 'LoRaWAN 1.0.0'},
+        {'value': '1.0.1', 'label': 'LoRaWAN 1.0.1'},
+        {'value': '1.0.2', 'label': 'LoRaWAN 1.0.2'},
+        {'value': '1.0.3', 'label': 'LoRaWAN 1.0.3'},
+        {'value': '1.0.4', 'label': 'LoRaWAN 1.0.4'},
+        {'value': '1.1.0', 'label': 'LoRaWAN 1.1.0'},
+    ]
+    selected_lorawan_version = session.get('selected_lorawan_version', '1.0.3')  # Default to 1.0.3
+    
     return render_template('registration_preview.html',
                          filename=original_filename,
                          device_count=len(mapped_devices),
@@ -1216,7 +1227,9 @@ def registration_preview():
                          server_url=SERVER_URL,
                          tenant_id=TENANT_ID,
                          data_audit=data_audit,
-                         mapped_devices_json=json.dumps(mapped_devices))
+                         mapped_devices_json=json.dumps(mapped_devices),
+                         lorawan_versions=lorawan_versions,
+                         selected_lorawan_version=selected_lorawan_version)
 
 
 @app.route('/start-registration', methods=['POST'])
@@ -1225,6 +1238,11 @@ def start_registration():
     # Store duplicate action in session
     duplicate_action = request.form.get('duplicate_action', 'skip')
     session['duplicate_action'] = duplicate_action
+    
+    # Store selected LoRaWAN version in session
+    lorawan_version = request.form.get('lorawan_version', '1.0.3')
+    session['selected_lorawan_version'] = lorawan_version
+    logger.info(f"Selected LoRaWAN version: {lorawan_version}")
     
     # Store custom tags in session
     custom_tags_json = request.form.get('custom_tags', '{}')
@@ -1281,8 +1299,27 @@ def register_devices_stream():
             df = pd.DataFrame(parsed_data[selected_sheet])
             logger.info(f"Loaded {len(df)} devices from sheet")
             
-            # Fetch LoRaWAN version information for the device profile
-            # Version detection disabled - using simple OTAA detection instead
+            # Get selected LoRaWAN version from session and create version dict
+            selected_version_str = session.get('selected_lorawan_version', '1.0.3')
+            logger.info(f"[Registration] Using LoRaWAN version: {selected_version_str}")
+            
+            # Send info message about detected version
+            yield f"data: {json.dumps({'status': 'info', 'message': f'Benutzer hat LoRaWAN {selected_version_str} ausgewählt'})}\n\n"
+            
+            # Parse version string to dict
+            from grpc_client import ChirpStackClient
+            version_parts = selected_version_str.split('.')
+            lorawan_version_info = {
+                'version': selected_version_str,
+                'major': int(version_parts[0]) if len(version_parts) > 0 else 1,
+                'minor': int(version_parts[1]) if len(version_parts) > 1 else 0,
+                'patch': int(version_parts[2]) if len(version_parts) > 2 else 0,
+                'is_1_0_x': selected_version_str.startswith('1.0'),
+                'is_1_1_x': selected_version_str.startswith('1.1'),
+            }
+            logger.info(f"[Registration] LoRaWAN version dict: {lorawan_version_info}")
+            
+            # Get custom tags
             custom_tags = session.get('custom_tags', {})
             logger.info(f"Custom tags from session: {custom_tags}")
             
