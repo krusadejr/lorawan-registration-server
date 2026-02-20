@@ -48,6 +48,14 @@
                     </button>
                 </div>
                 <div class="control">
+                    <button class="button is-info" id="reportBtn" onclick="generateSelectedReport()" disabled>
+                        <span class="icon">
+                            <i class="fas fa-file-excel"></i>
+                        </span>
+                        <span>Report für Ausgewählte</span>
+                    </button>
+                </div>
+                <div class="control">
                     <button class="button is-danger is-outlined" id="deleteAllDevicesBtn" onclick="deleteAll()" disabled>
                         <span class="icon">
                             <i class="fas fa-trash-alt"></i>
@@ -105,7 +113,7 @@
                                 </th>
                                 <th style="background-color: white; color: black; border: 1px solid #dbdbdb;">DevEUI</th>
                                 <th style="background-color: white; color: black; border: 1px solid #dbdbdb;">Name</th>
-                                <th style="background-color: white; color: black; border: 1px solid #dbdbdb;">Beschreibung</th>
+                                <th style="background-color: white; color: black; border: 1px solid #dbdbdb;">Tags</th>
                                 <th style="width: 120px; background-color: white; color: black; border: 1px solid #dbdbdb;">Aktionen</th>
                             </tr>
                         </thead>
@@ -179,10 +187,75 @@
     </div>
 </div>
 
+<!-- Edit Tags Modal -->
+<div class="modal" id="editTagsModal">
+    <div class="modal-background" onclick="closeEditTagsModal()"></div>
+    <div class="modal-card">
+        <header class="modal-card-head has-background-info">
+            <p class="modal-card-title has-text-white">
+                <i class="fas fa-tags"></i> Tags bearbeiten
+            </p>
+            <button class="delete" aria-label="close" onclick="closeEditTagsModal()"></button>
+        </header>
+        <section class="modal-card-body">
+            <div class="field">
+                <label class="label has-text-white">Geräte-EUI</label>
+                <div class="control">
+                    <input class="input" type="text" id="editDevEui" readonly>
+                </div>
+            </div>
+            
+            <div class="field">
+                <label class="label has-text-white">Geräte-Name</label>
+                <div class="control">
+                    <input class="input" type="text" id="editDevName" readonly>
+                </div>
+            </div>
+            
+            <div class="field">
+                <label class="label has-text-white">Tags</label>
+                <div class="control">
+                    <textarea class="textarea" id="editTagsInput" 
+                              placeholder="Format: key1:value1|key2:value2&#10;Beispiel: location:floor1|type:sensor|status:active"></textarea>
+                </div>
+                <p class="help has-text-grey-light">
+                    Format: <code>key:value</code> (mit | trennen)
+                </p>
+            </div>
+            
+            <div id="editTagsMessage" style="display: none;"></div>
+        </section>
+        <footer class="modal-card-foot" style="justify-content: flex-end;">
+            <button class="button" onclick="closeEditTagsModal()">Abbrechen</button>
+            <button class="button is-info" id="saveTagsBtn" onclick="saveDeviceTags()">
+                <span class="icon">
+                    <i class="fas fa-save"></i>
+                </span>
+                <span>Speichern</span>
+            </button>
+        </footer>
+    </div>
+</div>
+
 <script>
 let currentDevices = [];
 let devicesToDelete = [];
 let deleteMode = 'selected'; // 'selected' or 'all'
+
+function formatTags(tagsObj) {
+    /**
+     * Format tags dictionary into a readable string.
+     * If tags is an object like {location: "floor1", type: "sensor"},
+     * returns "location: floor1, type: sensor"
+     */
+    if (!tagsObj || typeof tagsObj !== 'object' || Object.keys(tagsObj).length === 0) {
+        return '-';
+    }
+    
+    return Object.entries(tagsObj)
+        .map(([key, value]) => `${key}: ${value}`)
+        .join(', ');
+}
 
 function loadDevices() {
     const appId = document.getElementById('application_id').value.trim();
@@ -263,8 +336,14 @@ function displayDevices(devices) {
                 <code style="color: black;">${device.dev_eui}</code>
             </td>
             <td style="background-color: white; color: black; border: 1px solid #dbdbdb;">${device.name || '-'}</td>
-            <td style="background-color: white; color: black; border: 1px solid #dbdbdb;">${device.description || '-'}</td>
+            <td style="background-color: white; color: black; border: 1px solid #dbdbdb;">${formatTags(device.tags)}</td>
             <td style="background-color: white; color: black; border: 1px solid #dbdbdb;">
+                <button class="button is-small is-info is-outlined" 
+                        onclick="openEditTagsModalByEui('${device.dev_eui}')">
+                    <span class="icon is-small">
+                        <i class="fas fa-edit"></i>
+                    </span>
+                </button>
                 <button class="button is-small is-danger is-outlined" 
                         onclick="deleteSingleDevice('${device.dev_eui}')">
                     <span class="icon is-small">
@@ -316,6 +395,7 @@ function toggleSelectAll() {
 function updateDeleteButton() {
     const checked = document.querySelectorAll('.device-checkbox:checked').length;
     document.getElementById('deleteAllBtn').disabled = checked === 0;
+    document.getElementById('reportBtn').disabled = checked === 0;
     
     // Update select all checkbox state
     const total = document.querySelectorAll('.device-checkbox').length;
@@ -350,6 +430,63 @@ function deleteAll() {
     openDeleteModal();
 }
 
+function generateSelectedReport() {
+    const checkboxes = document.querySelectorAll('.device-checkbox:checked');
+    const selectedDevEuis = Array.from(checkboxes).map(cb => cb.value);
+    
+    if (selectedDevEuis.length === 0) {
+        showError('Bitte wählen Sie mindestens ein Gerät aus.');
+        return;
+    }
+    
+    // Show loading
+    document.getElementById('reportBtn').classList.add('is-loading');
+    
+    // Send request to generate report
+    const formData = new FormData();
+    formData.append('dev_euis', selectedDevEuis.join(','));
+    
+    fetch('/api/generate-selected-devices-report', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        document.getElementById('reportBtn').classList.remove('is-loading');
+        
+        if (!data.success) {
+            showError(data.message || 'Fehler beim Erstellen des Berichts');
+            return;
+        }
+        
+        // Decode base64 file data and download
+        const binaryString = atob(data.file_data);
+        const bytes = new Uint8Array(binaryString.length);
+        for (let i = 0; i < binaryString.length; i++) {
+            bytes[i] = binaryString.charCodeAt(i);
+        }
+        
+        const blob = new Blob([bytes], {
+            type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        });
+        
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = data.filename;
+        document.body.appendChild(link);
+        link.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(link);
+        
+        showSuccess(`Report "${data.filename}" wurde erfolgreich heruntergeladen.`);
+    })
+    .catch(error => {
+        document.getElementById('reportBtn').classList.remove('is-loading');
+        showError('Fehler beim Erstellen des Berichts: ' + error);
+    });
+}
+
 function deleteSingleDevice(devEui) {
     devicesToDelete = [devEui];
     deleteMode = 'single';
@@ -369,6 +506,115 @@ function openDeleteModal() {
 
 function closeDeleteModal() {
     document.getElementById('deleteModal').classList.remove('is-active');
+}
+
+function openEditTagsModalByEui(devEui) {
+    /**
+     * Look up device from currentDevices array and open edit modal
+     */
+    const device = currentDevices.find(d => d.dev_eui === devEui);
+    if (!device) {
+        showError(`Gerät ${devEui} nicht gefunden`);
+        return;
+    }
+    
+    // Call the main modal opener with device data
+    openEditTagsModal(device.dev_eui, device.name, device.tags);
+}
+
+function openEditTagsModal(devEui, devName, tagsObj) {
+    /**
+     * Open the edit tags modal with device data
+     * tagsObj: device tags object (from device.tags)
+     */
+    try {
+        // Convert tags object to string format: key1:value1|key2:value2
+        let tagsStr = '';
+        if (tagsObj && typeof tagsObj === 'object' && Object.keys(tagsObj).length > 0) {
+            tagsStr = Object.entries(tagsObj)
+                .map(([key, value]) => `${key}:${value}`)
+                .join('|');
+        }
+        
+        document.getElementById('editDevEui').value = devEui;
+        document.getElementById('editDevName').value = devName;
+        document.getElementById('editTagsInput').value = tagsStr;
+        document.getElementById('editTagsMessage').style.display = 'none';
+        document.getElementById('saveTagsBtn').disabled = false;
+        
+        document.getElementById('editTagsModal').classList.add('is-active');
+    } catch (e) {
+        console.error('Error opening edit tags modal:', e);
+        showError('Fehler beim Öffnen des Tags-Editors: ' + e.message);
+    }
+}
+
+function closeEditTagsModal() {
+    document.getElementById('editTagsModal').classList.remove('is-active');
+    document.getElementById('editTagsMessage').style.display = 'none';
+}
+
+function saveDeviceTags() {
+    const devEui = document.getElementById('editDevEui').value.trim();
+    const tagsStr = document.getElementById('editTagsInput').value.trim();
+    
+    if (!devEui) {
+        showEditTagsError('Geräte-EUI ist erforderlich');
+        return;
+    }
+    
+    // Validate tags format if provided
+    if (tagsStr) {
+        const tagPairs = tagsStr.split('|');
+        for (let pair of tagPairs) {
+            pair = pair.trim();
+            if (!pair.includes(':')) {
+                showEditTagsError(`Ungültiges Format: "${pair}". Sollte sein: key:value`);
+                return;
+            }
+        }
+    }
+    
+    // Disable save button and show loading
+    document.getElementById('saveTagsBtn').disabled = true;
+    document.getElementById('saveTagsBtn').classList.add('is-loading');
+    
+    const formData = new FormData();
+    formData.append('dev_eui', devEui);
+    formData.append('tags', tagsStr);
+    
+    fetch('/api/update-device-tags', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        document.getElementById('saveTagsBtn').classList.remove('is-loading');
+        document.getElementById('saveTagsBtn').disabled = false;
+        
+        if (data.success) {
+            showSuccess(`Tags für Gerät ${devEui} erfolgreich aktualisiert`);
+            closeEditTagsModal();
+            // Reload devices to show updated tags
+            setTimeout(() => {
+                loadDevices();
+            }, 500);
+        } else {
+            showEditTagsError(data.message || 'Fehler beim Aktualisieren der Tags');
+        }
+    })
+    .catch(error => {
+        document.getElementById('saveTagsBtn').classList.remove('is-loading');
+        document.getElementById('saveTagsBtn').disabled = false;
+        showEditTagsError('Fehler beim Speichern der Tags: ' + error);
+    });
+}
+
+function showEditTagsError(message) {
+    const msgDiv = document.getElementById('editTagsMessage');
+    msgDiv.className = 'notification is-danger';
+    msgDiv.innerHTML = `<button class="delete" onclick="this.parentElement.style.display='none'"></button>${message}`;
+    msgDiv.style.display = 'block';
 }
 
 function confirmDelete() {

@@ -218,3 +218,41 @@ body.dark-mode {
     background-color: #ffdd57;
     color: rgba(0, 0, 0, 0.7);
 }
+
+/* Custom Tags Input Styling */
+.tag-row {
+    display: flex;
+    gap: 1rem;
+    align-items: flex-end;
+}
+
+.tag-name,
+.tag-value {
+    background-color: #2b2b2b;
+    color: #e0e0e0;
+    border-color: #404040;
+    border-radius: 4px;
+    padding: 0.5rem;
+}
+
+.tag-name:focus,
+.tag-value:focus {
+    background-color: #2b2b2b;
+    color: #e0e0e0;
+    border-color: #16a34a;
+    box-shadow: 0 0 0 0.125em rgba(22, 163, 74, 0.25);
+}
+
+.tag-name::placeholder,
+.tag-value::placeholder {
+    color: #757575;
+}
+
+.remove-tag {
+    border-radius: 4px;
+}
+
+.remove-tag:hover {
+    background-color: #c3122e;
+    border-color: #c3122e;
+}

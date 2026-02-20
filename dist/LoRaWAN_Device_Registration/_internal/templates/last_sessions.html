@@ -1,0 +1,151 @@
+{% extends "base.html" %}
+
+{% block title %}Letzte Sitzungen{% endblock %}
+
+{% block content %}
+<div class="columns is-centered">
+    <div class="column is-two-thirds">
+        <!-- Flash Messages -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                <div class="notification is-{{ category }} dark-notification">
+                    <button class="delete"></button>
+                    {{ message }}
+                </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <div class="box dark-box">
+            <h1 class="title is-3 has-text-light">
+                <i class="fas fa-history"></i>
+                Letzte Server-Sitzungen
+            </h1>
+            <p class="subtitle is-6 has-text-grey-light">
+                Laden Sie eine zuvor gespeicherte Server-Konfiguration
+            </p>
+
+            {% if sessions %}
+                <div class="columns is-multiline">
+                    {% for session in sessions %}
+                        {% if session.server_url or session.api_key or session.tenant_id %}
+                        <div class="column is-full">
+                            <div class="card dark-card">
+                                <div class="card-content">
+                                    <div class="level mb-3">
+                                        <div class="level-left">
+                                            <div class="level-item">
+                                                <h3 class="title is-5 has-text-light">
+                                                    <i class="fas fa-save"></i>
+                                                    Sitzung #{{ session.id + 1 }}
+                                                </h3>
+                                            </div>
+                                        </div>
+                                        <div class="level-right">
+                                            <div class="level-item">
+                                                {% if session.id == 0 %}
+                                                    <span class="tag is-success">Zuletzt verwendet</span>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="content has-text-grey-light is-small">
+                                        {% if session.server_url %}
+                                            <p class="mb-2">
+                                                <strong>Server:</strong><br>
+                                                <code>{{ session.server_url }}</code>
+                                            </p>
+                                        {% endif %}
+                                        
+                                        {% if session.tenant_id %}
+                                            <p class="mb-2">
+                                                <strong>Tenant ID:</strong><br>
+                                                <code>{{ session.tenant_id }}</code>
+                                            </p>
+                                        {% endif %}
+
+                                        {% if session.api_key %}
+                                            <p class="mb-3">
+                                                <strong>API Key:</strong><br>
+                                                <code>****{{ session.api_key[-4:] if session.api_key|length > 4 else '****' }}</code>
+                                            </p>
+                                        {% endif %}
+                                    </div>
+
+                                    <form method="POST" action="{{ url_for('load_session', session_id=session.id) }}">
+                                        <button type="submit" class="button is-success is-fullwidth">
+                                            <span class="icon">
+                                                <i class="fas fa-arrow-right"></i>
+                                            </span>
+                                            <span>Diese Sitzung laden</span>
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+                    {% endfor %}
+                </div>
+
+                {% if current_server_url or current_api_key or current_tenant_id %}
+                <div class="box dark-box mt-6" style="background-color: rgba(0, 0, 0, 0.2);">
+                    <h3 class="title is-5 has-text-light mb-3">
+                        <i class="fas fa-check-circle"></i>
+                        Aktuelle Konfiguration
+                    </h3>
+                    <div class="content has-text-grey-light is-small">
+                        {% if current_server_url %}
+                            <p class="mb-2">
+                                <strong>Server:</strong> <code>{{ current_server_url }}</code>
+                            </p>
+                        {% endif %}
+                        {% if current_tenant_id %}
+                            <p class="mb-2">
+                                <strong>Tenant ID:</strong> <code>{{ current_tenant_id }}</code>
+                            </p>
+                        {% endif %}
+                        {% if current_api_key %}
+                            <p class="mb-2">
+                                <strong>API Key:</strong> <code>****{{ current_api_key[-4:] if current_api_key|length > 4 else '****' }}</code>
+                            </p>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endif %}
+            {% else %}
+                <div class="notification is-info dark-notification">
+                    <p>
+                        <i class="fas fa-info-circle"></i>
+                        <strong>Keine Sitzungen verfügbar.</strong>
+                    </p>
+                    <p>Speichern Sie zuerst eine Server-Konfiguration, um sie später schnell laden zu können.</p>
+                </div>
+            {% endif %}
+
+            <!-- Navigation -->
+            <div class="mt-6">
+                <a href="{{ url_for('index') }}" class="button is-light">
+                    <span class="icon">
+                        <i class="fas fa-arrow-left"></i>
+                    </span>
+                    <span>Zurück zur Startseite</span>
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Delete notification functionality
+    document.addEventListener('DOMContentLoaded', () => {
+        (document.querySelectorAll('.notification .delete') || []).forEach(($delete) => {
+            const $notification = $delete.parentNode;
+            $delete.addEventListener('click', () => {
+                $notification.parentNode.removeChild($notification);
+            });
+        });
+    });
+</script>
+{% endblock %}

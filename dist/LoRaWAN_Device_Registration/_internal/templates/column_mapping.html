@@ -89,9 +89,12 @@
                                 <span class="tag is-danger is-light mr-2">Erforderlich</span>
                                 Application ID
                             </label>
+                            
+                            {% if has_application_id_column %}
+                            <!-- Show dropdown if column exists -->
                             <div class="control has-icons-left">
                                 <div class="select is-fullwidth dark-select">
-                                    <select name="application_id" required>
+                                    <select name="application_id">
                                         <option value="">-- Spalte auswählen --</option>
                                         {% for col in columns %}
                                         <option value="{{ col }}" {% if col.lower() in ['application_id', 'app_id', 'applicationid'] %}selected{% endif %}>{{ col }}</option>
@@ -103,6 +106,24 @@
                                 </span>
                             </div>
                             <p class="help has-text-grey-light">UUID der ChirpStack-Anwendung</p>
+                            
+                            {% else %}
+                            <!-- Show text input if column is missing -->
+                            <div class="notification is-warning dark-notification mb-3">
+                                <p>
+                                    <i class="fas fa-info-circle"></i>
+                                    <strong>Hinweis:</strong> Keine Application ID Spalte gefunden. Bitte geben Sie die UUID manuell ein.
+                                </p>
+                            </div>
+                            <div class="control has-icons-left">
+                                <input class="input dark-input" type="text" name="manual_application_id" 
+                                       placeholder="z.B. 79538b65-4bf1-47cb-80bb-5019090adadb" required>
+                                <span class="icon is-left">
+                                    <i class="fas fa-fingerprint"></i>
+                                </span>
+                            </div>
+                            <p class="help has-text-grey-light">Geben Sie die Application ID UUID ein. Diese wird für alle Geräte verwendet.</p>
+                            {% endif %}
                         </div>
                     </div>
 
@@ -201,6 +222,35 @@
                             <p class="help has-text-grey-light">Beschreibung des Geräts</p>
                         </div>
                     </div>
+                </div>
+
+                <!-- Tags Selection - Optional -->
+                <div class="box dark-box mt-5">
+                    <h3 class="subtitle is-5 has-text-light mb-3">
+                        <i class="fas fa-tags"></i>
+                        Tags auswählen (Optional)
+                    </h3>
+                    <p class="help has-text-grey-light mb-4">
+                        Wählen Sie zusätzliche Spalten aus, die als Tags für das Gerät gespeichert werden sollen. 
+                        Diese ermöglichen es Ihnen, Geräte zu organisieren und zu filtern (z.B. Typ, Standort, Seriennummer).
+                    </p>
+                    
+                    <div class="columns is-multiline">
+                        {% for col in columns %}
+                        <div class="column is-one-third">
+                            <label class="checkbox">
+                                <input type="checkbox" name="tag_columns" value="{{ col }}" class="tag-checkbox">
+                                <span class="ml-2">{{ col }}</span>
+                            </label>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    
+                    {% if columns|length == 0 %}
+                    <div class="notification is-info is-light">
+                        <p>Keine Spalten verfügbar für Tags.</p>
+                    </div>
+                    {% endif %}
                 </div>
 
                 <!-- Preview Section -->

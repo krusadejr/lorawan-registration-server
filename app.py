@@ -932,6 +932,26 @@ def process_mapping():
         flash(f'Bitte ordnen Sie alle erforderlichen Felder zu: {", ".join(missing_fields)}', 'danger')
         return redirect(url_for('column_mapping'))
     
+    # Validate column selections to catch common mistakes
+    nwk_key_col = column_mapping['nwk_key'].lower() if column_mapping['nwk_key'] else ''
+    app_key_col = column_mapping['app_key'].lower() if column_mapping['app_key'] else ''
+    
+    # Warning: If nwk_key selected is a SESSION key, not ROOT key
+    if 'nwkskey' in nwk_key_col or 'appskey' in nwk_key_col:
+        logger.warning(f"Potential issue: nwk_key column '{column_mapping['nwk_key']}' looks like a SESSION key, not ROOT key")
+        flash('Achtung: Die Spalte für "Network Key" scheint ein Sitzungsschlüssel zu sein, nicht der Wurzelschlüssel. '
+              'Bitte überprüfen Sie die Spaltenauswahl. Für 1.1.x-Geräte benötigen Sie den Netzwerk-Wurzelschlüssel.', 'warning')
+    
+    # Warning: If app_key is empty but there are columns that look like app keys
+    if not app_key_col:
+        logger.warning(f"app_key column not selected - will not set Application Key in ChirpStack")
+        flash('Informationen: Keine Spalte für "Application Key" ausgewählt. Stellen Sie sicher, dass dies beabsichtigt ist.', 'info')
+    # Warning: If both nwk_key and app_key seem to be selected the same
+    elif nwk_key_col == app_key_col:
+        logger.warning(f"Potential issue: nwk_key and app_key are both set to same column '{column_mapping['nwk_key']}'")
+        flash('Achtung: "Network Key" und "Application Key" sind auf die gleiche Spalte eingestellt. '
+              'Bitte überprüfen Sie die Spaltenauswahl.', 'warning')
+    
     # Store mapping in session
     session['column_mapping'] = column_mapping
     logger.info("Column mapping stored in session")

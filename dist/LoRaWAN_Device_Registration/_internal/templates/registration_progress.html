@@ -84,6 +84,11 @@
                 </p>
             </div>
 
+            <!-- Hidden Form to Store Results for Download -->
+            <form id="downloadForm" method="POST" action="{{ url_for('download_report') }}" style="display: none;">
+                <input type="hidden" id="resultsData" name="resultsData" value="">
+            </form>
+
             <!-- Detailed Results Section (hidden initially) -->
             <div id="detailedResults" style="display: none;">
                 <!-- Successful Devices -->
@@ -108,6 +113,51 @@
                             </table>
                         </div>
                     </div>
+
+                <!-- Failed Devices -->
+                <div id="failedDevicesSection" style="display: none;">
+                    <div class="notification is-danger dark-notification mb-5">
+                        <h3 class="subtitle is-5 has-text-light">
+                            <i class="fas fa-times-circle"></i>
+                            Fehlgeschlagene Registrierungen (<span id="failedCountDetail">0</span>)
+                        </h3>
+                        <div class="table-container" style="max-height: 400px; overflow-y: auto;">
+                            <table style="width: 100%; background-color: white; border-collapse: collapse;">
+                                <thead>
+                                    <tr style="background-color: white;">
+                                        <th style="padding: 8px; text-align: left; border: 1px solid #ddd; color: black;">#</th>
+                                        <th style="padding: 8px; text-align: left; border: 1px solid #ddd; color: black;">Device EUI</th>
+                                        <th style="padding: 8px; text-align: left; border: 1px solid #ddd; color: black;">Name</th>
+                                        <th style="padding: 8px; text-align: left; border: 1px solid #ddd; color: black;">Fehler</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="failedDevicesBody">
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="field is-grouped is-grouped-centered mb-5">
+                    <div class="control">
+                        <button type="button" class="button is-info is-large" onclick="downloadReport()">
+                            <span class="icon">
+                                <i class="fas fa-file-excel"></i>
+                            </span>
+                            <span>Bericht herunterladen (Excel)</span>
+                        </button>
+                    </div>
+                    <div class="control">
+                        <a href="{{ url_for('index') }}" class="button is-primary is-large">
+                            <span class="icon">
+                                <i class="fas fa-home"></i>
+                            </span>
+                            <span>Zurück zur Startseite</span>
+                        </a>
+                    </div>
+                </div>
+            </div>
                 </div>
 
                 <!-- Failed Devices -->
@@ -322,13 +372,17 @@ document.addEventListener('DOMContentLoaded', () => {
                     dev_eui: data.dev_eui || 'N/A',
                     name: data.device,
                     status: data.message,
-                    warning: data.result === 'warning'
+                    warning: data.result === 'warning',
+                    application_id: data.application_id || 'N/A',
+                    device_profile_id: data.device_profile_id || 'N/A'
                 });
             } else if (data.result === 'failed') {
                 failedDevices.push({
                     dev_eui: data.dev_eui || 'N/A',
                     name: data.device,
-                    error: data.message
+                    error: data.message,
+                    application_id: data.application_id || 'N/A',
+                    device_profile_id: data.device_profile_id || 'N/A'
                 });
             }
             
@@ -360,6 +414,17 @@ document.addEventListener('DOMContentLoaded', () => {
             successCount.textContent = data.successful;
             failedCount.textContent = data.failed;
             completionMessage.style.display = 'block';
+            
+            // Store results in hidden form for download
+            const resultsData = {
+                total: data.successful + data.failed,
+                successful: successfulDevices,
+                failed: failedDevices,
+                server_url: '{{ session.get("server_url", "N/A") }}',
+                api_code: '{{ session.get("api_code", "N/A")[:20] }}{% if session.get("api_code") %}...{% endif %}',
+                tenant_id: '{{ session.get("tenant_id", "N/A") }}'
+            };
+            document.getElementById('resultsData').value = JSON.stringify(resultsData);
             
             // Display detailed results inline
             displayDetailedResults();
@@ -421,5 +486,11 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 });
+
+// Function to download report
+function downloadReport() {
+    const form = document.getElementById('downloadForm');
+    form.submit();
+}
 </script>
 {% endblock %}

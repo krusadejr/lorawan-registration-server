@@ -26,11 +26,24 @@
                             type="text" 
                             name="server_url" 
                             placeholder="z.B. localhost:8080"
-                            value="{% if server_url %}{{ server_url }}{% endif %}">
+                            value="{% if server_url %}{{ server_url }}{% endif %}"
+                            list="server_url_history"
+                            autocomplete="off">
                         <span class="icon is-left">
                             <i class="fas fa-network-wired"></i>
                         </span>
                     </div>
+                    {% if history and history.server_urls %}
+                    <datalist id="server_url_history">
+                        {% for url in history.server_urls %}
+                        <option value="{{ url }}">
+                        {% endfor %}
+                    </datalist>
+                    <p class="help has-text-grey-light">
+                        <i class="fas fa-history"></i>
+                        Kürzlich verwendet: {{ history.server_urls|length }} Einträge
+                    </p>
+                    {% endif %}
                 </div>
 
                 <div class="field">
@@ -43,8 +56,20 @@
                             class="textarea dark-textarea" 
                             name="api_code" 
                             placeholder="Fügen Sie hier Ihren API Key ein..."
-                            rows="4">{% if api_code %}{{ api_code }}{% endif %}</textarea>
+                            rows="4"
+                            list="api_key_history">{% if api_code %}{{ api_code }}{% endif %}</textarea>
                     </div>
+                    {% if history and history.api_keys %}
+                    <datalist id="api_key_history">
+                        {% for key in history.api_keys %}
+                        <option value="{{ key }}">
+                        {% endfor %}
+                    </datalist>
+                    <p class="help has-text-grey-light">
+                        <i class="fas fa-history"></i>
+                        Kürzlich verwendet: {{ history.api_keys|length }} Einträge
+                    </p>
+                    {% endif %}
                     <p class="help has-text-grey-light">
                         <i class="fas fa-info-circle"></i>
                         Der API Key wird in der globalen Variable <strong>API_CODE</strong> gespeichert
@@ -62,11 +87,24 @@
                             type="text" 
                             name="tenant_id" 
                             placeholder="Tenant ID eingeben"
-                            value="{% if tenant_id %}{{ tenant_id }}{% endif %}">
+                            value="{% if tenant_id %}{{ tenant_id }}{% endif %}"
+                            list="tenant_id_history"
+                            autocomplete="off">
                         <span class="icon is-left">
                             <i class="fas fa-building"></i>
                         </span>
                     </div>
+                    {% if history and history.tenant_ids %}
+                    <datalist id="tenant_id_history">
+                        {% for tid in history.tenant_ids %}
+                        <option value="{{ tid }}">
+                        {% endfor %}
+                    </datalist>
+                    <p class="help has-text-grey-light">
+                        <i class="fas fa-history"></i>
+                        Kürzlich verwendet: {{ history.tenant_ids|length }} Einträge
+                    </p>
+                    {% endif %}
                     <p class="help has-text-grey-light">
                         <i class="fas fa-info-circle"></i>
                         Die Tenant ID wird in der globalen Variable <strong>TENANT_ID</strong> gespeichert

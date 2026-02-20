@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+
+{% block title %}Trennzeichen eingeben{% endblock %}
+
+{% block content %}
+<section class="section">
+    <div class="container">
+        <h1 class="title">Trennzeichen eingeben</h1>
+        <h2 class="subtitle">Datei: {{ original_filename }}</h2>
+
+        <div class="box">
+            {% if delimiter_info.error_message %}
+            <div class="notification is-warning">
+                <p><strong>Hinweis:</strong> {{ delimiter_info.error_message }}</p>
+            </div>
+            {% elif delimiter_info.confidence == 'low' %}
+            <div class="notification is-warning">
+                <p><strong>Hinweis:</strong> Das Trennzeichen konnte nicht zuverlässig erkannt werden.</p>
+                {% if delimiter_info.detected_delimiter %}
+                <p>Möglicherweise erkanntes Trennzeichen: <strong>{{ delimiter_info.delimiter_name }}</strong></p>
+                {% endif %}
+            </div>
+            {% endif %}
+
+            <div class="content">
+                <p>Bitte wählen Sie das Trennzeichen, das in Ihrer Datei verwendet wird, oder geben Sie ein eigenes ein:</p>
+            </div>
+
+            <form method="POST" action="{{ url_for('process_delimiter') }}">
+                <div class="field">
+                    <label class="label">Trennzeichen auswählen:</label>
+                    <div class="control">
+                        <label class="radio">
+                            <input type="radio" name="delimiter" value="comma" 
+                                {% if delimiter_info.detected_delimiter == ',' %}checked{% endif %}>
+                            Komma ( , )
+                        </label>
+                        <br>
+                        <label class="radio">
+                            <input type="radio" name="delimiter" value="semicolon"
+                                {% if delimiter_info.detected_delimiter == ';' %}checked{% endif %}>
+                            Semikolon ( ; )
+                        </label>
+                        <br>
+                        <label class="radio">
+                            <input type="radio" name="delimiter" value="tab"
+                                {% if delimiter_info.detected_delimiter == '\t' %}checked{% endif %}>
+                            Tab ( \t )
+                        </label>
+                        <br>
+                        <label class="radio">
+                            <input type="radio" name="delimiter" value="pipe"
+                                {% if delimiter_info.detected_delimiter == '|' %}checked{% endif %}>
+                            Pipe ( | )
+                        </label>
+                        <br>
+                        <label class="radio">
+                            <input type="radio" name="delimiter" value="space"
+                                {% if delimiter_info.detected_delimiter == ' ' %}checked{% endif %}>
+                            Leerzeichen
+                        </label>
+                    </div>
+                </div>
+
+                <div class="field">
+                    <label class="label">Oder geben Sie ein eigenes Trennzeichen ein:</label>
+                    <div class="control">
+                        <input class="input" type="text" name="custom_delimiter" 
+                               placeholder="z.B. | oder ;" maxlength="5"
+                               style="max-width: 200px;">
+                    </div>
+                    <p class="help">Wenn Sie ein eigenes Trennzeichen eingeben, wird dieses verwendet.</p>
+                </div>
+
+                <div class="field is-grouped">
+                    <div class="control">
+                        <button type="submit" class="button is-primary">
+                            <span class="icon">
+                                <i class="fas fa-check"></i>
+                            </span>
+                            <span>Datei parsen</span>
+                        </button>
+                    </div>
+                    <div class="control">
+                        <a href="{{ url_for('index') }}" class="button is-light">
+                            <span class="icon">
+                                <i class="fas fa-times"></i>
+                            </span>
+                            <span>Abbrechen</span>
+                        </a>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <div class="box">
+            <h3 class="title is-5">Hilfe: Wie erkenne ich mein Trennzeichen?</h3>
+            <div class="content">
+                <p>Öffnen Sie Ihre Datei in einem Texteditor und schauen Sie, welches Zeichen die Spalten trennt:</p>
+                <ul>
+                    <li><strong>Komma (,):</strong> <code>Name,Wert,Typ</code></li>
+                    <li><strong>Semikolon (;):</strong> <code>Name;Wert;Typ</code></li>
+                    <li><strong>Tab (\t):</strong> Die Spalten sind durch große Abstände getrennt</li>
+                    <li><strong>Pipe (|):</strong> <code>Name|Wert|Typ</code></li>
+                    <li><strong>Leerzeichen:</strong> <code>Name Wert Typ</code></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

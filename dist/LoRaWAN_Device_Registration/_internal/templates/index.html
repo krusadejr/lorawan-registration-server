@@ -59,6 +59,18 @@
                             </span>
                             <span>Konfiguration ändern</span>
                         </a>
+                        <a href="{{ url_for('last_sessions') }}" class="button is-link">
+                            <span class="icon">
+                                <i class="fas fa-history"></i>
+                            </span>
+                            <span>Letzte Sitzungen</span>
+                        </a>
+                        <a href="{{ url_for('export_server_config') }}" class="button is-warning">
+                            <span class="icon">
+                                <i class="fas fa-download"></i>
+                            </span>
+                            <span>Konfiguration exportieren</span>
+                        </a>
                     </div>
                 </div>
             {% else %}
@@ -75,8 +87,28 @@
                             </span>
                             <span>Server jetzt konfigurieren</span>
                         </a>
+                        <a href="{{ url_for('last_sessions') }}" class="button is-link is-outlined">
+                            <span class="icon">
+                                <i class="fas fa-history"></i>
+                            </span>
+                            <span>Letzte Sitzungen laden</span>
+                        </a>
                     </div>
                 </div>
+            {% endif %}
+            
+            <!-- Clear History Button -->
+            {% if history and (history.server_urls or history.api_keys or history.tenant_ids) %}
+            <div class="mt-4">
+                <form method="POST" action="{{ url_for('clear_history') }}" onsubmit="return confirm('Möchten Sie wirklich den gesamten Konfigurationsverlauf löschen?');">
+                    <button type="submit" class="button is-small is-danger is-outlined">
+                        <span class="icon is-small">
+                            <i class="fas fa-trash"></i>
+                        </span>
+                        <span>Verlauf löschen</span>
+                    </button>
+                </form>
+            </div>
             {% endif %}
         </div>
 
@@ -119,7 +151,7 @@
                     <div class="control">
                         <div class="file has-name is-fullwidth is-info">
                             <label class="file-label">
-                                <input class="file-input" type="file" name="file" accept=".xlsx,.xls,.xlsm,.txt,.json" id="fileInput" required>
+                                <input class="file-input" type="file" name="file" accept=".xlsx,.xls,.xlsm,.txt,.json,.csv" id="fileInput" required>
                                 <span class="file-cta">
                                     <span class="file-icon">
                                         <i class="fas fa-upload"></i>
@@ -151,6 +183,31 @@
                     </div>
                 </div>
             </form>
+        </div>
+
+        <!-- Upload Cache Information -->
+        <div class="notification is-info dark-notification mt-5">
+            <p class="has-text-light mb-2">
+                <i class="fas fa-info-circle mr-2"></i>
+                <strong>Upload-Cache Information</strong>
+            </p>
+            <div class="content has-text-light is-small">
+                <p>
+                    Die Anwendung behält automatisch die <strong>letzten 20 hochgeladenen Dateien</strong> in einem lokalen Cache. 
+                    Ältere Dateien werden automatisch gelöscht, um Speicherplatz zu sparen.
+                </p>
+                <p>
+                    <strong>Aktueller Status:</strong>
+                </p>
+                <ul>
+                    <li>Dateien im Cache: <strong>{{ cache_status.file_count }}</strong> / 20</li>
+                    <li>Speicherplatz: <strong>{{ cache_status.size_mb }} MB</strong></li>
+                </ul>
+                <p class="mb-0">
+                    <i class="fas fa-check-circle" style="color: #48c774;"></i>
+                    Cache-Cleanup läuft automatisch beim Start der Anwendung.
+                </p>
+            </div>
         </div>
     </div>
 </div>

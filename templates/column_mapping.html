@@ -163,7 +163,7 @@
                                     <select name="nwk_key" required>
                                         <option value="">-- Spalte auswählen --</option>
                                         {% for col in columns %}
-                                        <option value="{{ col }}" {% if col.lower() in ['nwk_key', 'nwkkey', 'network_key', 'networkkey'] %}selected{% endif %}>{{ col }}</option>
+                                        <option value="{{ col }}" {% set col_lower = col.lower() %}{% if col_lower in ['nwk_key', 'nwkkey', 'network_key', 'networkkey'] or ('nwk' in col_lower and 'key' in col_lower and 'skey' not in col_lower) %}selected{% endif %}>{{ col }}</option>
                                         {% endfor %}
                                     </select>
                                 </div>
@@ -171,8 +171,9 @@
                                     <i class="fas fa-key"></i>
                                 </span>
                             </div>
-                            <p class="help has-text-grey-light">32 Zeichen Hexadezimal</p>
+                            <p class="help has-text-grey-light">32 Zeichen Hexadezimal (Netzwerk-Wurzelschlüssel, NICHT die Session-Schlüssel)</p>
                         </div>
+
                     </div>
 
                     <!-- Application Key - Optional -->
@@ -187,7 +188,7 @@
                                     <select name="app_key">
                                         <option value="">-- Keine / Spalte auswählen --</option>
                                         {% for col in columns %}
-                                        <option value="{{ col }}" {% if col.lower() in ['app_key', 'appkey', 'application_key', 'applicationkey'] %}selected{% endif %}>{{ col }}</option>
+                                        <option value="{{ col }}" {% set col_lower = col.lower() %}{% if col_lower in ['app_key', 'appkey', 'application_key', 'applicationkey'] or 'otaa' in col_lower or ('lora_appkey' in col_lower) or ('app' in col_lower and 'key' in col_lower and 'skey' not in col_lower and 'session' not in col_lower) %}selected{% endif %}>{{ col }}</option>
                                         {% endfor %}
                                     </select>
                                 </div>
