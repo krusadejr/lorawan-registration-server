@@ -1181,8 +1181,8 @@ def registration_preview():
     if len(data_audit['unique_profile_ids']) == 1:
         profile_id_str = list(data_audit['unique_profile_ids'])[0]
         data_audit['warnings'].append(
-            f"ℹ️ Alle Geräte verwenden die gleiche Device Profile ID: <code>{profile_id_str}</code><br/>"
-            f"<small>Bitte stellen Sie sicher, dass diese ID in Ihrer ChirpStack-Instanz existiert (nicht gelöscht oder in anderem Tenant)</small>"
+            f"ℹ️ Alle Geräte verwenden die gleiche Device Profile ID: {profile_id_str} — "
+            f"Bitte stellen Sie sicher, dass diese ID in Ihrer ChirpStack-Instanz existiert"
         )
     
     logger.info(f"Data audit: {data_audit}")
