@@ -985,6 +985,12 @@ def process_mapping():
         flash('Achtung: Die Spalte für "Network Key" scheint ein Sitzungsschlüssel zu sein, nicht der Wurzelschlüssel. '
               'Bitte überprüfen Sie die Spaltenauswahl. Für 1.1.x-Geräte benötigen Sie den Netzwerk-Wurzelschlüssel.', 'warning')
     
+    # Warning: If app_key selected is a SESSION key, not APP root key
+    if app_key_col and ('nwkskey' in app_key_col):
+        logger.warning(f"Potential issue: app_key column '{column_mapping['app_key']}' looks like the NETWORK Session Key, not the Application Key")
+        flash('⚠️ KRITISCH: Die Spalte für "Application Key" ist auf "lora_nwkskey" eingestellt - das ist der NETWORK SESSION Key, nicht der Application Key! '
+              'Für OTAA: Verwenden Sie "OTAA keys" oder "lora_appkey*". Für ABP: Es wird kein Application Key benötigt.', 'danger')
+    
     # Warning: If app_key is empty but there are columns that look like app keys
     if not app_key_col:
         logger.warning(f"app_key column not selected - will not set Application Key in ChirpStack")

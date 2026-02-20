@@ -188,7 +188,7 @@
                                     <select name="app_key">
                                         <option value="">-- Keine / Spalte auswählen --</option>
                                         {% for col in columns %}
-                                        <option value="{{ col }}" {% set col_lower = col.lower() %}{% if col_lower in ['app_key', 'appkey', 'application_key', 'applicationkey'] or 'otaa' in col_lower or ('lora_appkey' in col_lower) or ('app' in col_lower and 'key' in col_lower and 'skey' not in col_lower and 'session' not in col_lower) %}selected{% endif %}>{{ col }}</option>
+                                        <option value="{{ col }}" {% set col_lower = col.lower() %}{% if col_lower in ['app_key', 'appkey', 'application_key', 'applicationkey'] or 'otaa' in col_lower or 'lora_appkey' in col_lower %}selected{% endif %}>{{ col }}</option>
                                         {% endfor %}
                                     </select>
                                 </div>
@@ -196,7 +196,7 @@
                                     <i class="fas fa-key"></i>
                                 </span>
                             </div>
-                            <p class="help has-text-grey-light">32 Zeichen Hexadezimal (falls vorhanden)</p>
+                            <p class="help has-text-grey-light"><strong>OTAA:</strong> Verwenden Sie die Spalte mit den provisorierten AppKeys (z.B. "OTAA keys", "lora_appkey*")<br/><strong>ABP:</strong> Normalerweise leer - ABP nutzt Session Keys, nicht AppKey</p>
                         </div>
                     </div>
 
