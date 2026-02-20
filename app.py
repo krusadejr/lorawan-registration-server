@@ -440,18 +440,6 @@ def test_connection():
                          result=connection_result)
 
 
-@app.route('/lorawan-version-detector')
-def lorawan_version_detector():
-    """
-    Simple device profile info page
-    Shows what profiles exist without complex API calls
-    """
-    return render_template('lorawan_version_detector.html',
-                         configured=False,
-                         server_url=SERVER_URL,
-                         message="Feature simplified - using automatic OTAA detection during registration instead")
-
-
 @app.route('/help')
 def help_page():
     """Help page with instructions for getting ChirpStack IDs."""
