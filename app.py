@@ -1363,7 +1363,8 @@ def register_devices_stream():
                     
                     if lorawan_version_info:
                         logger.info(f"[Registration] Detected LoRaWAN version: {lorawan_version_info['version']} (Profile: {lorawan_version_info['name']})")
-                        yield f"data: {json.dumps({'status': 'info', 'message': f\"LoRaWAN-Version erkannt: {lorawan_version_info['version']}\", 'version': lorawan_version_info['version']})}\n\n"
+                        version_message = f"LoRaWAN-Version erkannt: {lorawan_version_info['version']}"
+                        yield f"data: {json.dumps({'status': 'info', 'message': version_message, 'version': lorawan_version_info['version']})}\n\n"
                     else:
                         logger.warning(f"[Registration] Could not determine LoRaWAN version for profile {sample_device_profile_id}")
             except Exception as e:
