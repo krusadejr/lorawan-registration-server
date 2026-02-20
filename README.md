@@ -14,10 +14,6 @@ Eine Flask-Webanwendung zur Massenregistrierung von LoRaWAN-Geräten auf einem C
 4. **Öffnen**: Der Browser öffnet sich automatisch auf http://localhost:5000
 5. **Konfigurieren**: Geben Sie die ChirpStack-Servereinstellungen ein
 
-### Für Entwickler (Python-Entwicklung)
-
-Siehe [Entwicklungs-Setup](#entwicklungs-setup) Abschnitt unten.
-
 ---
 
 ## 📋 Funktionen
@@ -218,27 +214,6 @@ Button überprüft:
 
 ---
 
-## 📥 Entwicklungs-Setup
-
-\\\ash
-# Virtuelle Umgebung erstellen
-python -m venv venv
-
-# Aktivieren (Windows)
-venv\Scripts\activate
-
-# Abhängigkeiten installieren
-pip install -r requirements.txt
-
-# Entwicklungsserver starten
-python app.py
-\\\
-
-Anwendung verfügbar auf http://localhost:5000
-
-
----
-
 ## 📊 Versionshistorie
 
 ### v1.2.0 (Februar 2026)
@@ -261,3 +236,6 @@ Anwendung verfügbar auf http://localhost:5000
 
 **Zuletzt aktualisiert**: Februar 20, 2026
 **Version**: v1.2.0
+
+
+
