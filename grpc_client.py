@@ -633,60 +633,9 @@ def validate_key(key, key_name="Key"):
     
     def get_device_profiles_via_rest(self, tenant_id=None):
         """
-        Get list of device profiles using REST API (simpler than gRPC)
-        This includes LoRaWAN version information
-        
-        Args:
-            tenant_id (str): Optional tenant ID to filter profiles
-            
-        Returns:
-            tuple: (success: bool, profiles: list or error: str)
+        Placeholder - deprecated in favor of simpler approach
         """
-        try:
-            import logging
-            logger = logging.getLogger(__name__)
-            
-            # Construct REST API endpoint
-            base_url = f"http://{self.server_url}"
-            url = f"{base_url}/api/device-profiles"
-            if tenant_id:
-                url += f"?tenant_id={tenant_id}"
-            
-            headers = {
-                "Grpc-Metadata-authorization": self.api_key,
-                "Content-Type": "application/json"
-            }
-            
-            logger.info(f"[REST] Fetching device profiles from {url}")
-            response = requests.get(url, headers=headers, timeout=10)
-            response.raise_for_status()
-            
-            data = response.json()
-            profiles = []
-            
-            for profile in data.get('result', []):
-                mac_version = self.parse_mac_version(profile.get('mac_version', 0))
-                profiles.append({
-                    'id': profile.get('id', ''),
-                    'name': profile.get('name', ''),
-                    'mac_version': mac_version,
-                    'lorawan_version': f"{mac_version['major']}.{mac_version['minor']}.{mac_version['patch']}",
-                    'supports_otaa': profile.get('supports_otaa', False),
-                    'supports_abp': profile.get('supports_abp', False),
-                    'raw_data': profile
-                })
-            
-            logger.info(f"[REST] Found {len(profiles)} device profiles")
-            return True, profiles
-            
-        except requests.exceptions.RequestException as e:
-            error_msg = f"REST API error: {e}"
-            logger.error(error_msg)
-            return False, error_msg
-        except Exception as e:
-            error_msg = f"Error fetching device profiles: {str(e)}"
-            logger.error(error_msg)
-            return False, error_msg
+        return False, "Method deprecated - use gRPC detection instead"
     
     def get_lorawan_version_from_profile_id(self, device_profile_id, tenant_id=None):
         """
