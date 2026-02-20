@@ -608,7 +608,8 @@ def validate_key(key, key_name="Key"):
     except ValueError:
         return False, f"{key_name} must contain only hexadecimal characters (0-9, A-F)"
     
-    return True, clean_key    
+    return True, clean_key
+    
     @staticmethod
     def parse_mac_version(mac_version_enum):
         """
@@ -618,17 +619,17 @@ def validate_key(key, key_name="Key"):
             mac_version_enum (int): Enum value from common.MacVersion
             
         Returns:
-            dict: {'version': '1.0.3', 'major': 1, 'minor': 0, 'patch': 3}
+            dict: {'version': '1.0.3', 'major': 1, 'minor': 0, 'patch': 3, 'is_1_0_x': True, 'is_1_1_x': False}
         """
         mac_version_map = {
-            0: {'version': '1.0.0', 'major': 1, 'minor': 0, 'patch': 0},
-            1: {'version': '1.0.1', 'major': 1, 'minor': 0, 'patch': 1},
-            2: {'version': '1.0.2', 'major': 1, 'minor': 0, 'patch': 2},
-            3: {'version': '1.0.3', 'major': 1, 'minor': 0, 'patch': 3},
-            4: {'version': '1.0.4', 'major': 1, 'minor': 0, 'patch': 4},
-            5: {'version': '1.1.0', 'major': 1, 'minor': 1, 'patch': 0},
+            0: {'version': '1.0.0', 'major': 1, 'minor': 0, 'patch': 0, 'is_1_0_x': True, 'is_1_1_x': False},
+            1: {'version': '1.0.1', 'major': 1, 'minor': 0, 'patch': 1, 'is_1_0_x': True, 'is_1_1_x': False},
+            2: {'version': '1.0.2', 'major': 1, 'minor': 0, 'patch': 2, 'is_1_0_x': True, 'is_1_1_x': False},
+            3: {'version': '1.0.3', 'major': 1, 'minor': 0, 'patch': 3, 'is_1_0_x': True, 'is_1_1_x': False},
+            4: {'version': '1.0.4', 'major': 1, 'minor': 0, 'patch': 4, 'is_1_0_x': True, 'is_1_1_x': False},
+            5: {'version': '1.1.0', 'major': 1, 'minor': 1, 'patch': 0, 'is_1_0_x': False, 'is_1_1_x': True},
         }
-        return mac_version_map.get(mac_version_enum, {'version': 'UNKNOWN', 'major': -1, 'minor': -1, 'patch': -1})
+        return mac_version_map.get(mac_version_enum, {'version': 'UNKNOWN', 'major': -1, 'minor': -1, 'patch': -1, 'is_1_0_x': False, 'is_1_1_x': False})
     
     def get_device_profiles_via_rest(self, tenant_id=None):
         """
