@@ -236,12 +236,28 @@
                         Diese ermöglichen es Ihnen, Geräte zu organisieren und zu filtern (z.B. Typ, Standort, Seriennummer).
                     </p>
                     
+                    <!-- Select All / Deselect All buttons -->
+                    <div class="mb-4">
+                        <button type="button" id="selectAllTags" class="button is-small is-info is-outlined">
+                            <span class="icon is-small">
+                                <i class="fas fa-check-square"></i>
+                            </span>
+                            <span>Alle auswählen</span>
+                        </button>
+                        <button type="button" id="deselectAllTags" class="button is-small is-outlined ml-2">
+                            <span class="icon is-small">
+                                <i class="fas fa-square"></i>
+                            </span>
+                            <span>Alle abwählen</span>
+                        </button>
+                    </div>
+                    
                     <div class="columns is-multiline">
                         {% for col in columns %}
                         <div class="column is-one-third">
-                            <label class="checkbox">
+                            <label class="checkbox has-text-light">
                                 <input type="checkbox" name="tag_columns" value="{{ col }}" class="tag-checkbox">
-                                <span class="ml-2">{{ col }}</span>
+                                <span class="ml-2 has-text-light">{{ col }}</span>
                             </label>
                         </div>
                         {% endfor %}
@@ -416,6 +432,29 @@
                         e.preventDefault();
                     }
                 }
+            });
+        }
+        
+        // Add Select All / Deselect All functionality for tags
+        const selectAllTagsBtn = document.getElementById('selectAllTags');
+        const deselectAllTagsBtn = document.getElementById('deselectAllTags');
+        const tagCheckboxes = document.querySelectorAll('input[name="tag_columns"]');
+        
+        if (selectAllTagsBtn) {
+            selectAllTagsBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                tagCheckboxes.forEach(checkbox => {
+                    checkbox.checked = true;
+                });
+            });
+        }
+        
+        if (deselectAllTagsBtn) {
+            deselectAllTagsBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                tagCheckboxes.forEach(checkbox => {
+                    checkbox.checked = false;
+                });
             });
         }
     });
