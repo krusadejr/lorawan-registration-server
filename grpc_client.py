@@ -7,6 +7,8 @@ import grpc
 from generated.api import device_pb2, device_pb2_grpc
 from generated.common import common_pb2
 import re
+import requests
+import json
 
 
 class ChirpStackClient:
@@ -198,24 +200,63 @@ class ChirpStackClient:
         except Exception as e:
             return False, f"Error creating device: {str(e)}"
     
-    def create_device_keys(self, dev_eui, nwk_key, app_key):
+    def create_device_keys(self, dev_eui, nwk_key, app_key, is_otaa=True, lorawan_version=None):
         """
-        Create device keys in ChirpStack
+        Create device keys in ChirpStack (version-aware)
+        
+        NOTE: ChirpStack protobuf field semantics differ between LoRaWAN versions:
+        - LoRaWAN 1.0.x OTAA: Use nwk_key field for the Root Application Key (AppKey)
+        - LoRaWAN 1.1.x: Use app_key field for the Application Root Key
         
         Args:
             dev_eui (str): Device EUI
-            nwk_key (str): Network key (32 hex characters)
+            nwk_key (str): Network key (32 hex characters) 
             app_key (str): Application key (32 hex characters)
+            is_otaa (bool): Whether device uses OTAA. Used as fallback if lorawan_version not provided.
+            lorawan_version (dict): LoRaWAN version info from get_lorawan_version_from_profile_id()
+                                  Format: {'version': '1.0.3', 'is_1_0_x': True, 'is_1_1_x': False, ...}
             
         Returns:
             tuple: (success: bool, message: str)
         """
         try:
+            import logging
+            logger = logging.getLogger(__name__)
+            
+            # Determine version-aware field mapping
+            if lorawan_version:
+                # Use actual device profile version
+                if lorawan_version['is_1_0_x']:
+                    # LoRaWAN 1.0.x: AppKey goes to nwk_key field
+                    proto_nwk_key = app_key
+                    proto_app_key = ""
+                    logger.info(f"[gRPC] create_device_keys (LoRaWAN {lorawan_version['version']} OTAA) - dev_eui={dev_eui}, nwk_key={app_key} (OTAA AppKey)")
+                elif lorawan_version['is_1_1_x']:
+                    # LoRaWAN 1.1.x: Standard field mapping
+                    proto_nwk_key = nwk_key
+                    proto_app_key = app_key
+                    logger.info(f"[gRPC] create_device_keys (LoRaWAN {lorawan_version['version']}) - dev_eui={dev_eui}, nwk_key={nwk_key}, app_key={app_key}")
+                else:
+                    # Unknown version - use safe default
+                    logger.warning(f"[gRPC] Unknown LoRaWAN version, using default mapping: {lorawan_version}")
+                    proto_nwk_key = nwk_key
+                    proto_app_key = app_key
+            else:
+                # Fallback: Use is_otaa flag
+                if is_otaa:
+                    proto_nwk_key = app_key
+                    proto_app_key = ""
+                    logger.info(f"[gRPC] create_device_keys (OTAA, version unknown) - dev_eui={dev_eui}, nwk_key={app_key}")
+                else:
+                    proto_nwk_key = nwk_key
+                    proto_app_key = app_key
+                    logger.info(f"[gRPC] create_device_keys (ABP/1.1.x fallback) - dev_eui={dev_eui}, nwk_key={nwk_key}, app_key={app_key}")
+            
             # Create device keys object
             device_keys = device_pb2.DeviceKeys(
                 dev_eui=dev_eui,
-                nwk_key=nwk_key,
-                app_key=app_key
+                nwk_key=proto_nwk_key,
+                app_key=proto_app_key
             )
             
             # Create request
@@ -567,4 +608,123 @@ def validate_key(key, key_name="Key"):
     except ValueError:
         return False, f"{key_name} must contain only hexadecimal characters (0-9, A-F)"
     
-    return True, clean_key
+    return True, clean_key    
+    @staticmethod
+    def parse_mac_version(mac_version_enum):
+        """
+        Parse MAC version enum to human-readable string
+        
+        Args:
+            mac_version_enum (int): Enum value from common.MacVersion
+            
+        Returns:
+            dict: {'version': '1.0.3', 'major': 1, 'minor': 0, 'patch': 3}
+        """
+        mac_version_map = {
+            0: {'version': '1.0.0', 'major': 1, 'minor': 0, 'patch': 0},
+            1: {'version': '1.0.1', 'major': 1, 'minor': 0, 'patch': 1},
+            2: {'version': '1.0.2', 'major': 1, 'minor': 0, 'patch': 2},
+            3: {'version': '1.0.3', 'major': 1, 'minor': 0, 'patch': 3},
+            4: {'version': '1.0.4', 'major': 1, 'minor': 0, 'patch': 4},
+            5: {'version': '1.1.0', 'major': 1, 'minor': 1, 'patch': 0},
+        }
+        return mac_version_map.get(mac_version_enum, {'version': 'UNKNOWN', 'major': -1, 'minor': -1, 'patch': -1})
+    
+    def get_device_profiles_via_rest(self, tenant_id=None):
+        """
+        Get list of device profiles using REST API (simpler than gRPC)
+        This includes LoRaWAN version information
+        
+        Args:
+            tenant_id (str): Optional tenant ID to filter profiles
+            
+        Returns:
+            tuple: (success: bool, profiles: list or error: str)
+        """
+        try:
+            import logging
+            logger = logging.getLogger(__name__)
+            
+            # Construct REST API endpoint
+            base_url = f"http://{self.server_url}"
+            url = f"{base_url}/api/device-profiles"
+            if tenant_id:
+                url += f"?tenant_id={tenant_id}"
+            
+            headers = {
+                "Grpc-Metadata-authorization": self.api_key,
+                "Content-Type": "application/json"
+            }
+            
+            logger.info(f"[REST] Fetching device profiles from {url}")
+            response = requests.get(url, headers=headers, timeout=10)
+            response.raise_for_status()
+            
+            data = response.json()
+            profiles = []
+            
+            for profile in data.get('result', []):
+                mac_version = self.parse_mac_version(profile.get('mac_version', 0))
+                profiles.append({
+                    'id': profile.get('id', ''),
+                    'name': profile.get('name', ''),
+                    'mac_version': mac_version,
+                    'lorawan_version': f"{mac_version['major']}.{mac_version['minor']}.{mac_version['patch']}",
+                    'supports_otaa': profile.get('supports_otaa', False),
+                    'supports_abp': profile.get('supports_abp', False),
+                    'raw_data': profile
+                })
+            
+            logger.info(f"[REST] Found {len(profiles)} device profiles")
+            return True, profiles
+            
+        except requests.exceptions.RequestException as e:
+            error_msg = f"REST API error: {e}"
+            logger.error(error_msg)
+            return False, error_msg
+        except Exception as e:
+            error_msg = f"Error fetching device profiles: {str(e)}"
+            logger.error(error_msg)
+            return False, error_msg
+    
+    def get_lorawan_version_from_profile_id(self, device_profile_id, tenant_id=None):
+        """
+        Get LoRaWAN version for a specific device profile
+        
+        Args:
+            device_profile_id (str): UUID of device profile
+            tenant_id (str): Optional tenant ID
+            
+        Returns:
+            dict: {'version': '1.0.3', 'major': 1, 'minor': 0, 'patch': 3, 'is_1_0_x': True}
+        """
+        try:
+            import logging
+            logger = logging.getLogger(__name__)
+            
+            success, profiles = self.get_device_profiles_via_rest(tenant_id)
+            if not success:
+                logger.error(f"Could not fetch device profiles: {profiles}")
+                return None
+            
+            for profile in profiles:
+                if profile['id'] == device_profile_id:
+                    mac_v = profile['mac_version']
+                    return {
+                        'version': mac_v['version'],
+                        'major': mac_v['major'],
+                        'minor': mac_v['minor'],
+                        'patch': mac_v['patch'],
+                        'is_1_0_x': mac_v['major'] == 1 and mac_v['minor'] == 0,
+                        'is_1_1_x': mac_v['major'] == 1 and mac_v['minor'] == 1,
+                        'name': profile['name'],
+                        'supports_otaa': profile['supports_otaa'],
+                        'supports_abp': profile['supports_abp']
+                    }
+            
+            logger.warning(f"Device profile {device_profile_id} not found in list")
+            return None
+            
+        except Exception as e:
+            logger.error(f"Error getting LoRaWAN version: {str(e)}")
+            return None

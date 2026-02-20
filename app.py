@@ -440,6 +440,73 @@ def test_connection():
                          result=connection_result)
 
 
+@app.route('/lorawan-version-detector')
+def lorawan_version_detector():
+    """
+    Diagnostic page to detect LoRaWAN versions of device profiles
+    Shows which device profiles are 1.0.x, 1.1.x, OTAA, ABP, etc.
+    """
+    import logging
+    logger = logging.getLogger(__name__)
+    
+    version_info = {
+        'configured': False,
+        'server_url': SERVER_URL,
+        'tenant_id': TENANT_ID,
+        'profiles': [],
+        'errors': [],
+        'summary': {}
+    }
+    
+    try:
+        if not SERVER_URL or not API_CODE:
+            version_info['errors'].append("ChirpStack server nicht konfiguriert")
+            return render_template('lorawan_version_detector.html', **version_info)
+        
+        logger.info("[Diagnostics] Fetching device profiles and LoRaWAN versions...")
+        
+        # Connect and fetch profiles
+        from grpc_client import ChirpStackClient
+        client = ChirpStackClient(SERVER_URL, API_CODE)
+        client.connect()
+        
+        success, result = client.get_device_profiles_via_rest(TENANT_ID)
+        
+        if not success:
+            version_info['errors'].append(f"Fehler beim Abrufen von Geräteprofilen: {result}")
+            logger.error(f"[Diagnostics] Failed to fetch profiles: {result}")
+        else:
+            version_info['configured'] = True
+            version_info['profiles'] = result
+            
+            # Generate summary
+            v100_count = sum(1 for p in result if p['mac_version']['minor'] == 0)
+            v110_count = sum(1 for p in result if p['mac_version']['minor'] == 1)
+            otaa_count = sum(1 for p in result if p['supports_otaa'])
+            abp_count = sum(1 for p in result if p['supports_abp'])
+            
+            version_info['summary'] = {
+                'total_profiles': len(result),
+                'lorawan_1_0_x': v100_count,
+                'lorawan_1_1_x': v110_count,
+                'supports_otaa': otaa_count,
+                'supports_abp': abp_count
+            }
+            
+            logger.info(f"[Diagnostics] Found {len(result)} device profiles: {v100_count} x 1.0.x, {v110_count} x 1.1.x")
+        
+        client.close()
+        
+    except ImportError as e:
+        version_info['errors'].append(f"Import-Fehler: {str(e)}")
+        logger.error(f"[Diagnostics] Import error: {e}")
+    except Exception as e:
+        version_info['errors'].append(f"Fehler: {str(e)}")
+        logger.error(f"[Diagnostics] Error: {e}", exc_info=True)
+    
+    return render_template('lorawan_version_detector.html', **version_info)
+
+
 @app.route('/help')
 def help_page():
     """Help page with instructions for getting ChirpStack IDs."""
@@ -1050,6 +1117,19 @@ def registration_preview():
     df = pd.DataFrame(parsed_data[selected_sheet])
     logger.info(f"Loaded {len(df)} devices from sheet")
     
+    # Fetch LoRaWAN version information for the device profile
+    lorawan_version_info = None
+    try:
+        sample_device_profile_id = str(df.iloc[0][column_mapping['device_profile_id']]).strip() if len(df) > 0 else None
+        if sample_device_profile_id:
+            from grpc_client import ChirpStackClient
+            temp_client = ChirpStackClient(SERVER_URL, API_CODE)
+            lorawan_version_info = temp_client.get_lorawan_version_from_profile_id(sample_device_profile_id, TENANT_ID)
+            temp_client.close()
+            logger.info(f"[Preview] Detected LoRaWAN version: {lorawan_version_info}")
+    except Exception as e:
+        logger.warning(f"[Preview] Could not fetch LoRaWAN version: {e}")
+    
     # Map columns to device fields
     mapped_devices = []
     for idx, row in df.iterrows():
@@ -1060,15 +1140,36 @@ def registration_preview():
         elif column_mapping['application_id']:
             app_id = str(row[column_mapping['application_id']])
         
+        # Check if device is OTAA by looking for lora_joinmode column
+        is_otaa = False
+        if 'lora_joinmode' in df.columns:
+            join_mode = str(row['lora_joinmode']).strip().upper() if pd.notna(row['lora_joinmode']) else 'ABP'
+            is_otaa = join_mode == 'OTAA'
+        
+        # For OTAA devices, use OTAA keys column if available
+        nwk_key_value = str(row[column_mapping['nwk_key']]) if column_mapping['nwk_key'] else ''
+        if is_otaa and 'OTAA keys' in df.columns and pd.notna(row['OTAA keys']):
+            # Override: for OTAA 1.0.x, use OTAA keys for the nwk_key field
+            otaa_keys = str(row['OTAA keys']).strip()
+            if otaa_keys:  # Only override if OTAA keys has a value
+                nwk_key_value = otaa_keys
+                logger.info(f"[Preview] Device {str(row[column_mapping['dev_eui']])}: OTAA detected, using 'OTAA keys' column: {nwk_key_value}")
+        
         device = {
             'dev_eui': str(row[column_mapping['dev_eui']]) if column_mapping['dev_eui'] else '',
             'name': str(row[column_mapping['name']]) if column_mapping['name'] else '',
             'application_id': app_id,
             'device_profile_id': str(row[column_mapping['device_profile_id']]) if column_mapping['device_profile_id'] else '',
-            'nwk_key': str(row[column_mapping['nwk_key']]) if column_mapping['nwk_key'] else '',
+            'nwk_key': nwk_key_value,
             'app_key': str(row[column_mapping['app_key']]) if column_mapping.get('app_key') and column_mapping['app_key'] else '',
-            'description': str(row[column_mapping['description']]) if column_mapping.get('description') and column_mapping['description'] else ''
+            'description': str(row[column_mapping['description']]) if column_mapping.get('description') and column_mapping['description'] else '',
+            'is_otaa': is_otaa,
+            'lorawan_version': lorawan_version_info  # NEW: Include version info
         }
+        
+        # DEBUG: Log the extraction
+        if column_mapping.get('app_key'):
+            logger.info(f"[Preview] Device {device['dev_eui']}: app_key column='{column_mapping['app_key']}', extracted value='{device['app_key']}', is_otaa={is_otaa}")
         
         # Extract tags
         tags = {}
@@ -1246,8 +1347,29 @@ def register_devices_stream():
                 parsed_data = json.load(f)
             
             df = pd.DataFrame(parsed_data[selected_sheet])
+            logger.info(f"Loaded {len(df)} devices from sheet")
             
-            # Get custom tags from session
+            # Fetch LoRaWAN version information for the device profile
+            # This will be used to determine correct key mapping
+            lorawan_version_info = None
+            try:
+                # Get first device to extract device_profile_id
+                sample_device_profile_id = str(df.iloc[0][column_mapping['device_profile_id']]).strip() if len(df) > 0 else None
+                if sample_device_profile_id:
+                    from grpc_client import ChirpStackClient
+                    temp_client = ChirpStackClient(SERVER_URL, API_CODE)
+                    lorawan_version_info = temp_client.get_lorawan_version_from_profile_id(sample_device_profile_id, TENANT_ID)
+                    temp_client.close()
+                    
+                    if lorawan_version_info:
+                        logger.info(f"[Registration] Detected LoRaWAN version: {lorawan_version_info['version']} (Profile: {lorawan_version_info['name']})")
+                        yield f"data: {json.dumps({'status': 'info', 'message': f\"LoRaWAN-Version erkannt: {lorawan_version_info['version']}\", 'version': lorawan_version_info['version']})}\n\n"
+                    else:
+                        logger.warning(f"[Registration] Could not determine LoRaWAN version for profile {sample_device_profile_id}")
+            except Exception as e:
+                logger.warning(f"[Registration] Error fetching LoRaWAN version: {e}")
+                # Continue anyway - we have fallback logic
+            
             custom_tags = session.get('custom_tags', {})
             logger.info(f"Custom tags from session: {custom_tags}")
             
@@ -1261,15 +1383,36 @@ def register_devices_stream():
                 elif column_mapping['application_id']:
                     app_id = str(row[column_mapping['application_id']]).strip()
                 
+                # Check if device is OTAA by looking for lora_joinmode column
+                is_otaa = False
+                if 'lora_joinmode' in df.columns:
+                    join_mode = str(row['lora_joinmode']).strip().upper() if pd.notna(row['lora_joinmode']) else 'ABP'
+                    is_otaa = join_mode == 'OTAA'
+                
+                # For OTAA devices, use OTAA keys column if available
+                nwk_key_value = str(row[column_mapping['nwk_key']]).strip()
+                if is_otaa and 'OTAA keys' in df.columns and pd.notna(row['OTAA keys']):
+                    # Override: for OTAA 1.0.x, use OTAA keys for the nwk_key field
+                    otaa_keys = str(row['OTAA keys']).strip()
+                    if otaa_keys:  # Only override if OTAA keys has a value
+                        nwk_key_value = otaa_keys
+                        logger.info(f"[Registration] Device {str(row[column_mapping['dev_eui']]).strip()}: OTAA detected, using 'OTAA keys' column for nwk_key field: {nwk_key_value}")
+                
                 device = {
                     'dev_eui': str(row[column_mapping['dev_eui']]).strip(),
                     'name': str(row[column_mapping['name']]).strip(),
                     'application_id': app_id,
                     'device_profile_id': str(row[column_mapping['device_profile_id']]).strip(),
-                    'nwk_key': str(row[column_mapping['nwk_key']]).strip(),
+                    'nwk_key': nwk_key_value,
                     'app_key': str(row[column_mapping['app_key']]).strip() if column_mapping.get('app_key') and column_mapping['app_key'] else '',
-                    'description': str(row[column_mapping['description']]).strip() if column_mapping.get('description') and column_mapping['description'] else ''
+                    'description': str(row[column_mapping['description']]).strip() if column_mapping.get('description') and column_mapping['description'] else '',
+                    'is_otaa': is_otaa,
+                    'lorawan_version': lorawan_version_info  # NEW: Pass version info
                 }
+                
+                # DEBUG: Log the extraction
+                if column_mapping.get('app_key'):
+                    logger.info(f"[Registration] Device {device['dev_eui']}: app_key column='{column_mapping['app_key']}', extracted value='{device['app_key']}', is_otaa={is_otaa}")
                 
                 # Extract tags from columns
                 tags = {}
@@ -1395,7 +1538,8 @@ def register_devices_stream():
                     keys_set, keys_msg = thread_client.create_device_keys(
                         dev_eui=device['dev_eui'],
                         nwk_key=device['nwk_key'],
-                        app_key=device['app_key'] if device['app_key'] else None
+                        app_key=device['app_key'] if device['app_key'] else None,
+                        lorawan_version=device.get('lorawan_version')  # NEW: Use actual version
                     )
                     logger.info(f"[Worker-{idx}] create_device_keys returned: set={keys_set}, msg={keys_msg}")
                     
@@ -1670,7 +1814,8 @@ def register_devices():
             keys_set, keys_msg = client.create_device_keys(
                 dev_eui=device['dev_eui'],
                 nwk_key=device['nwk_key'],
-                app_key=device['app_key'] if device['app_key'] else None
+                app_key=device['app_key'] if device['app_key'] else None,
+                is_otaa=device.get('is_otaa', True)
             )
             
             if not keys_set:
