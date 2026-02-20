@@ -38,6 +38,59 @@
                 </div>
             </div>
 
+            <!-- Data Audit / Validation Report -->
+            {% if data_audit and (data_audit.warnings or data_audit.statistics) %}
+            <div class="notification is-dark mb-5">
+                <h3 class="subtitle is-5 has-text-light">
+                    <i class="fas fa-clipboard-list"></i>
+                    Datenvalidierungsbericht
+                </h3>
+                
+                <div class="columns is-multiline">
+                    <div class="column is-one-quarter">
+                        <div class="box" style="background-color: #2b3d3a; text-align: center;">
+                            <p class="heading">Gesamt</p>
+                            <p class="title is-4">{{ data_audit.statistics.total_devices }}</p>
+                        </div>
+                    </div>
+                    <div class="column is-one-quarter">
+                        <div class="box" style="background-color: {% if data_audit.statistics.devices_with_empty_keys > 0 %}#4a3a2a{% else %}#2b3d3a{% endif %}; text-align: center;">
+                            <p class="heading">Ohne NwkKey</p>
+                            <p class="title is-4 {% if data_audit.statistics.devices_with_empty_keys > 0 %}has-text-warning{% endif %}">{{ data_audit.statistics.devices_with_empty_keys }}</p>
+                        </div>
+                    </div>
+                    <div class="column is-one-quarter">
+                        <div class="box" style="background-color: {% if data_audit.statistics.devices_with_invalid_eui > 0 %}#4a3a2a{% else %}#2b3d3a{% endif %}; text-align: center;">
+                            <p class="heading">Ungültige EUI</p>
+                            <p class="title is-4 {% if data_audit.statistics.devices_with_invalid_eui > 0 %}has-text-warning{% endif %}">{{ data_audit.statistics.devices_with_invalid_eui }}</p>
+                        </div>
+                    </div>
+                    <div class="column is-one-quarter">
+                        <div class="box" style="background-color: {% if data_audit.statistics.devices_with_invalid_keys > 0 %}#4a3a2a{% else %}#2b3d3a{% endif %}; text-align: center;">
+                            <p class="heading">Ungültige Keys</p>
+                            <p class="title is-4 {% if data_audit.statistics.devices_with_invalid_keys > 0 %}has-text-warning{% endif %}">{{ data_audit.statistics.devices_with_invalid_keys }}</p>
+                        </div>
+                    </div>
+                </div>
+                
+                {% if data_audit.warnings %}
+                <div class="mt-4">
+                    <h4 class="subtitle is-6 has-text-warning">⚠️ Erkannte Probleme:</h4>
+                    {% for warning in data_audit.warnings %}
+                    <div class="box" style="background-color: #3a3a2a; border-left: 3px solid #ffdd57;">
+                        <p class="has-text-light">{{ warning }}</p>
+                    </div>
+                    {% endfor %}
+                    <p class="help has-text-grey-light mt-3">Bitte überprüfen Sie die Spaltenauswahl auf der Spalten-Zuordnungsseite.</p>
+                </div>
+                {% else %}
+                <div class="mt-4">
+                    <p class="has-text-success">✓ Daten sehen gut aus!</p>
+                </div>
+                {% endif %}
+            </div>
+            {% endif %}
+
             <!-- Server Configuration Check -->
             {% if server_configured %}
                 <div class="notification is-success dark-notification mb-5">

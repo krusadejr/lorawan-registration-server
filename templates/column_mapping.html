@@ -290,14 +290,134 @@
 </div>
 
 <script>
-    // Handle notification close buttons
+    // Parse column statistics from backend
+    const columnStats = {{ column_stats|safe }};
+    
+    // Column validation rules
+    const validationRules = {
+        dev_eui: { type: 'key', minLength: 16, name: 'Device EUI' },
+        nwk_key: { type: 'key', minLength: 32, name: 'Network Key' },
+        app_key: { type: 'key', minLength: 32, name: 'Application Key', allowEmpty: true },
+        name: { type: 'text', minLength: 1, name: 'Device Name' },
+        application_id: { type: 'id', minLength: 1, name: 'Application ID' },
+        device_profile_id: { type: 'id', minLength: 1, name: 'Device Profile ID' },
+        description: { type: 'text', minLength: 0, name: 'Description', allowEmpty: true }
+    };
+    
+    // Function to validate column format
+    function validateColumnFormat(colName, rule = {}) {
+        if (!columnStats[colName]) return null;
+        
+        const stats = columnStats[colName];
+        const issues = [];
+        
+        // Check for empty column
+        if (stats.empty_percent >= 50) {
+            issues.push(`⚠️ ${stats.empty_percent}% empty`);
+        } else if (stats.empty_percent > 0) {
+            issues.push(`⚠️ ${stats.empty_percent}% empty`);
+        }
+        
+        // Check if looks like key but column has wrong format
+        if (rule.type === 'key' && !stats.looks_like_key && stats.non_empty_count > 0) {
+            issues.push(`⚠️ Values don't look like hex keys`);
+        }
+        
+        return issues.length > 0 ? issues : null;
+    }
+    
+    // Function to create sample display text
+    function getSampleText(colName) {
+        if (!columnStats[colName]) return '';
+        
+        const stats = columnStats[colName];
+        const samples = stats.samples.slice(0, 2).join(' | ');
+        const emptyInfo = stats.empty_count > 0 ? ` (${stats.empty_count} empty)` : '';
+        return `${samples}${emptyInfo}`;
+    }
+    
+    // Function to update validation display
+    function updateColumnValidation(fieldName) {
+        const select = document.querySelector(`select[name="${fieldName}"]`);
+        if (!select) return;
+        
+        const colName = select.value;
+        const rule = validationRules[fieldName] || {};
+        const issues = validateColumnFormat(colName, rule);
+        
+        // Find or create validation message div
+        let msgDiv = select.parentElement.nextElementSibling;
+        while (msgDiv && !msgDiv.classList.contains('column-validation')) {
+            msgDiv = msgDiv.nextElementSibling;
+        }
+        
+        if (!msgDiv) {
+            msgDiv = document.createElement('div');
+            msgDiv.className = 'column-validation help mt-2';
+            select.parentElement.parentElement.appendChild(msgDiv);
+        }
+        
+        if (colName && issues) {
+            msgDiv.innerHTML = `<span class="has-text-warning">${issues.join(' ')}</span>`;
+            msgDiv.style.display = 'block';
+        } else if (colName) {
+            msgDiv.innerHTML = `<span class="has-text-success">✓ ${getSampleText(colName)}</span>`;
+            msgDiv.style.display = 'block';
+        } else {
+            msgDiv.style.display = 'none';
+        }
+    }
+    
+    // Initialize validation on page load
     document.addEventListener('DOMContentLoaded', () => {
+        // Notification close handlers
         (document.querySelectorAll('.notification .delete') || []).forEach(($delete) => {
             const $notification = $delete.parentNode;
             $delete.addEventListener('click', () => {
                 $notification.parentNode.removeChild($notification);
             });
         });
+        
+        // Add change listeners to all field selects
+        Object.keys(validationRules).forEach(fieldName => {
+            const select = document.querySelector(`select[name="${fieldName}"]`);
+            if (select) {
+                // Initial validation
+                updateColumnValidation(fieldName);
+                
+                // On change validation
+                select.addEventListener('change', function() {
+                    updateColumnValidation(fieldName);
+                });
+            }
+        });
+        
+        // Add form submit validation
+        const form = document.querySelector('form');
+        if (form) {
+            form.addEventListener('submit', function(e) {
+                let hasWarnings = false;
+                
+                // Check for critical issues before submit
+                const criticalFields = ['dev_eui', 'nwk_key'];
+                criticalFields.forEach(fieldName => {
+                    const select = document.querySelector(`select[name="${fieldName}"]`);
+                    if (select && select.value) {
+                        const issues = validateColumnFormat(select.value);
+                        if (issues && issues.some(i => i.includes('empty'))) {
+                            hasWarnings = true;
+                        }
+                    }
+                });
+                
+                if (hasWarnings) {
+                    const confirmSubmit = confirm('Einige Spalten haben Probleme (z.B. viele leere Werte). Möchten Sie trotzdem fortfahren?');
+                    if (!confirmSubmit) {
+                        e.preventDefault();
+                    }
+                }
+            });
+        }
     });
 </script>
 {% endblock %}

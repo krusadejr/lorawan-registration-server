@@ -875,13 +875,40 @@ def column_mapping():
     )
     
     logger.info("Rendering column_mapping.html template")
+    
+    # Compute column statistics for validation
+    column_stats = {}
+    for col in columns:
+        non_null_values = df[col].dropna()
+        sample_values = non_null_values.head(3).astype(str).tolist()
+        empty_count = df[col].isna().sum()
+        non_empty_count = len(non_null_values)
+        
+        # Check if values look like hex keys (32 or 16 chars of hex)
+        looks_like_key = False
+        if sample_values:
+            first_val = str(sample_values[0]).strip()
+            if len(first_val) in [32, 16, 64]:  # Common key lengths
+                looks_like_key = all(all(c in '0123456789ABCDEFabcdef' for c in str(v).strip() if c) for v in sample_values if v)
+        
+        column_stats[col] = {
+            'samples': sample_values,
+            'empty_count': int(empty_count),
+            'non_empty_count': int(non_empty_count),
+            'total_count': len(df),
+            'empty_percent': round(empty_count / len(df) * 100, 1) if len(df) > 0 else 0,
+            'looks_like_key': looks_like_key
+        }
+    
+    logger.info("Column statistics computed")
     return render_template('column_mapping.html',
                          filename=original_filename,
                          selected_sheet=selected_sheet,
                          columns=columns,
                          row_count=len(df),
                          preview_html=preview_html,
-                         has_application_id_column=has_application_id_column)
+                         has_application_id_column=has_application_id_column,
+                         column_stats=json.dumps(column_stats))
 
 
 @app.route('/process-mapping', methods=['POST'])
@@ -1034,6 +1061,58 @@ def registration_preview():
     
     logger.info(f"Mapped {len(mapped_devices)} devices successfully")
     
+    # Validate mapped data for common issues
+    data_audit = {
+        'warnings': [],
+        'statistics': {
+            'total_devices': len(mapped_devices),
+            'devices_with_empty_keys': 0,
+            'devices_with_invalid_eui': 0,
+            'devices_with_invalid_keys': 0
+        }
+    }
+    
+    # Check each device for issues
+    for device in mapped_devices:
+        # Check for empty network key
+        if not device['nwk_key'] or str(device['nwk_key']).strip().upper() == 'NAN':
+            data_audit['statistics']['devices_with_empty_keys'] += 1
+        
+        # Check DevEUI format (should be 16 hex chars)
+        dev_eui = str(device['dev_eui']).strip()
+        if not dev_eui or len(dev_eui) != 16 or not all(c in '0123456789ABCDEFabcdef' for c in dev_eui):
+            data_audit['statistics']['devices_with_invalid_eui'] += 1
+        
+        # Check key formats (should be 32 hex chars)
+        nwk_key = str(device['nwk_key']).strip()
+        if nwk_key and (len(nwk_key) != 32 or not all(c in '0123456789ABCDEFabcdef' for c in nwk_key)):
+            data_audit['statistics']['devices_with_invalid_keys'] += 1
+        
+        if device['app_key']:
+            app_key = str(device['app_key']).strip()
+            if app_key and (len(app_key) != 32 or not all(c in '0123456789ABCDEFabcdef' for c in app_key)):
+                data_audit['statistics']['devices_with_invalid_keys'] += 1
+    
+    # Generate warnings based on audit
+    if data_audit['statistics']['devices_with_empty_keys'] > 0:
+        data_audit['warnings'].append(
+            f"⚠️ {data_audit['statistics']['devices_with_empty_keys']} Gerät(e) haben keinen Network Key"
+        )
+    if data_audit['statistics']['devices_with_invalid_eui'] > 0:
+        data_audit['warnings'].append(
+            f"⚠️ {data_audit['statistics']['devices_with_invalid_eui']} Gerät(e) haben ungültige Device EUI (sollte 16 Hex-Zeichen sein)"
+        )
+    if data_audit['statistics']['devices_with_invalid_keys'] > 0:
+        data_audit['warnings'].append(
+            f"⚠️ {data_audit['statistics']['devices_with_invalid_keys']} Gerät(e) haben ungültige Schlüssel (sollten 32 Hex-Zeichen sein)"
+        )
+    
+    logger.info(f"Data audit: {data_audit}")
+    
+    # Flash warnings if there are issues
+    for warning in data_audit['warnings']:
+        flash(warning, 'warning')
+    
     # Create preview DataFrame
     preview_df = pd.DataFrame(mapped_devices)
     preview_html = preview_df.head(10).to_html(
@@ -1052,7 +1131,9 @@ def registration_preview():
                          preview_html=preview_html,
                          server_configured=server_configured,
                          server_url=SERVER_URL,
-                         tenant_id=TENANT_ID)
+                         tenant_id=TENANT_ID,
+                         data_audit=data_audit,
+                         mapped_devices_json=json.dumps(mapped_devices))
 
 
 @app.route('/start-registration', methods=['POST'])
