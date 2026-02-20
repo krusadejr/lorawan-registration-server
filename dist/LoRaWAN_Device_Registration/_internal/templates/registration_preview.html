@@ -38,6 +38,80 @@
                 </div>
             </div>
 
+            <!-- Data Audit / Validation Report -->
+            {% if data_audit and (data_audit.warnings or data_audit.statistics) %}
+            <div class="notification is-dark mb-5">
+                <h3 class="subtitle is-5 has-text-light">
+                    <i class="fas fa-clipboard-list"></i>
+                    Datenvalidierungsbericht
+                </h3>
+                
+                <div class="columns is-multiline">
+                    <div class="column is-one-quarter">
+                        <div class="box" style="background-color: #2b3d3a; text-align: center;">
+                            <p class="heading">Gesamt</p>
+                            <p class="title is-4">{{ data_audit.statistics.total_devices }}</p>
+                        </div>
+                    </div>
+                    <div class="column is-one-quarter">
+                        <div class="box" style="background-color: {% if data_audit.statistics.devices_with_empty_keys > 0 %}#4a3a2a{% else %}#2b3d3a{% endif %}; text-align: center;">
+                            <p class="heading">Ohne NwkKey</p>
+                            <p class="title is-4 {% if data_audit.statistics.devices_with_empty_keys > 0 %}has-text-warning{% endif %}">{{ data_audit.statistics.devices_with_empty_keys }}</p>
+                        </div>
+                    </div>
+                    <div class="column is-one-quarter">
+                        <div class="box" style="background-color: {% if data_audit.statistics.devices_with_invalid_eui > 0 %}#4a3a2a{% else %}#2b3d3a{% endif %}; text-align: center;">
+                            <p class="heading">Ungültige EUI</p>
+                            <p class="title is-4 {% if data_audit.statistics.devices_with_invalid_eui > 0 %}has-text-warning{% endif %}">{{ data_audit.statistics.devices_with_invalid_eui }}</p>
+                        </div>
+                    </div>
+                    <div class="column is-one-quarter">
+                        <div class="box" style="background-color: {% if data_audit.statistics.devices_with_invalid_keys > 0 %}#4a3a2a{% else %}#2b3d3a{% endif %}; text-align: center;">
+                            <p class="heading">Ungültige Keys</p>
+                            <p class="title is-4 {% if data_audit.statistics.devices_with_invalid_keys > 0 %}has-text-warning{% endif %}">{{ data_audit.statistics.devices_with_invalid_keys }}</p>
+                        </div>
+                    </div>
+                    {% if data_audit.statistics.get('devices_with_invalid_profile_id', 0) > 0 %}
+                    <div class="column is-one-quarter">
+                        <div class="box" style="background-color: #4a3a2a; text-align: center;">
+                            <p class="heading">Ungültige Profile ID</p>
+                            <p class="title is-4 has-text-warning">{{ data_audit.statistics.devices_with_invalid_profile_id }}</p>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+                
+                {% if data_audit.warnings %}
+                <div class="mt-4">
+                    <h4 class="subtitle is-6 has-text-warning">⚠️ Erkannte Probleme:</h4>
+                    {% for warning in data_audit.warnings %}
+                    <div class="box" style="background-color: #3a3a2a; border-left: 3px solid #ffdd57;">
+                        <p class="has-text-light">{{ warning }}</p>
+                    </div>
+                    {% endfor %}
+                    <p class="help has-text-grey-light mt-3">Bitte überprüfen Sie die Spaltenauswahl auf der Spalten-Zuordnungsseite.</p>
+                </div>
+                {% else %}
+                <div class="mt-4">
+                    <p class="has-text-success">✓ Daten sehen gut aus!</p>
+                </div>
+                {% endif %}
+
+                <!-- Device Profile IDs Section -->
+                {% if data_audit and data_audit.unique_profile_ids %}
+                <div class="mt-5" style="border-top: 1px solid #444; padding-top: 1.5rem;">
+                    <h4 class="subtitle is-6 has-text-light mb-3">📋 Device Profile IDs (werden für alle Geräte verwendet):</h4>
+                    {% for profile_id in data_audit.unique_profile_ids %}
+                    <div class="box" style="background-color: #2a2a3e; border-left: 4px solid #ffdd57;">
+                        <code class="has-text-warning" style="word-break: break-all; font-size: 0.9em;">{{ profile_id }}</code>
+                        <p class="help has-text-grey-light mt-2">Bitte stellen Sie sicher, dass diese ID in Ihrer ChirpStack-Instanz existiert</p>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+            </div>
+            {% endif %}
+
             <!-- Server Configuration Check -->
             {% if server_configured %}
                 <div class="notification is-success dark-notification mb-5">
@@ -136,15 +210,16 @@
             <div class="notification is-warning dark-notification mb-5">
                 <h3 class="subtitle is-5 has-text-dark">
                     <i class="fas fa-exclamation-triangle"></i>
-                    Wichtige Hinweise
+                    ⚠️ Kritische Überprüfungen vor der Registrierung
                 </h3>
                 <div class="content has-text-dark">
                     <ul>
-                        <li>Die Registrierung erstellt <strong>{{ device_count }} Geräte</strong> in ChirpStack</li>
-                        <li>Stellen Sie sicher, dass die Application ID und Device Profile ID existieren</li>
-                        <li>DevEUIs müssen eindeutig sein (keine Duplikate)</li>
-                        <li>Der Prozess kann nicht rückgängig gemacht werden</li>
-                        <li>Bei Fehlern werden Details im Log gespeichert</li>
+                        <li><strong>Device Profile ID überprüfen:</strong> Stellen Sie sicher, dass die oben angezeigten Device Profile ID(s) in Ihrer ChirpStack-Instanz existieren. Wenn diese ID nicht existiert, schlagen alle Registrierungen fehl!</li>
+                        <li><strong>Application ID überprüfen:</strong> Überprüfen Sie, dass die Application in ChirpStack existiert und Sie Zugriff darauf haben</li>
+                        <li><strong>Eindeutige DevEUIs:</strong> Alle Geräte-EUIs müssen eindeutig sein (keine Duplikate)</li>
+                        <li><strong>Netzwerk- und Anwendungsschlüssel:</strong> Überprüfen Sie, dass alle erforderlichen Schlüssel vorhanden sind</li>
+                        <li><strong>Nicht rückgängig zu machen:</strong> Der Registrierungsprozess kann nicht rückgängig gemacht werden</li>
+                        <li><strong>Fehler-Logging:</strong> Bei Fehlern werden alle Details im Log gespeichert</li>
                     </ul>
                 </div>
             </div>
@@ -178,6 +253,42 @@
                     <p class="help has-text-grey-light">
                         <i class="fas fa-info-circle"></i>
                         Bei "Überspringen" werden existierende Geräte ignoriert. Bei "Ersetzen" werden sie gelöscht und mit den neuen Daten neu erstellt.
+                    </p>
+                </div>
+                
+                <!-- LoRaWAN Version Selection -->
+                <div class="box" style="background-color: #1a1a2e; border: 1px solid #48c774; margin-bottom: 1.5rem;">
+                    <h3 class="subtitle is-5 has-text-light">
+                        <i class="fas fa-microchip"></i>
+                        LoRaWAN Version
+                    </h3>
+                    <p class="has-text-grey-light mb-3">Wählen Sie die LoRaWAN-Version Ihrer Geräteprofile. Dies ist wichtig für die korrekte Zuordnung der Schlüssel!</p>
+                    <div class="field">
+                        <label class="label has-text-light">Geräte-LoRaWAN-Version:</label>
+                        <div class="control is-expanded">
+                            <div class="select is-fullwidth dark-select">
+                                <select name="lorawan_version" id="lorawanVersion" required>
+                                    {% for version in lorawan_versions %}
+                                        <option value="{{ version.value }}" {% if version.value == selected_lorawan_version %}selected{% endif %}>
+                                            {{ version.label }}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="message is-info">
+                        <div class="message-body has-text-dark">
+                            <p><strong>💡 Hinweis:</strong> Sie können die LoRaWAN-Version in ChirpStack unter "Device Profiles" → "MAC Version" sehen.</p>
+                            <ul class="mt-2" style="margin-left: 20px;">
+                                <li>Versionen 1.0.0 - 1.0.4: AppKey geht in das nwk_key Feld</li>
+                                <li>Version 1.1.0: AppKey geht in das app_key Feld</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <p class="help has-text-grey-light mt-3">
+                        <i class="fas fa-exclamation-circle"></i>
+                        <strong>Falls nicht sicher:</strong> Schauen Sie in Ihrem ChirpStack nach, welche MAC Version Ihre Device Profile haben.
                     </p>
                 </div>
                 
