@@ -55,6 +55,22 @@ API_CODE = None                 # API key for authentication
 TENANT_ID = None                # Tenant ID
 
 
+def _is_valid_uuid(uuid_string):
+    """
+    Validate if a string is a valid UUID format.
+    UUID should be 36 characters: XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX
+    """
+    try:
+        if not isinstance(uuid_string, str):
+            return False
+        uuid_string = uuid_string.strip()
+        # Try to parse it as UUID
+        uuid.UUID(uuid_string)
+        return True
+    except (ValueError, AttributeError):
+        return False
+
+
 def cleanup_upload_cache(keep_count=20):
     """
     Clean up old upload files, keeping only the last N files.
@@ -1068,12 +1084,19 @@ def registration_preview():
             'total_devices': len(mapped_devices),
             'devices_with_empty_keys': 0,
             'devices_with_invalid_eui': 0,
-            'devices_with_invalid_keys': 0
-        }
+            'devices_with_invalid_keys': 0,
+            'devices_with_invalid_profile_id': 0
+        },
+        'unique_profile_ids': set(),
+        'unique_app_ids': set()
     }
     
     # Check each device for issues
     for device in mapped_devices:
+        # Track unique profile and app IDs
+        data_audit['unique_profile_ids'].add(device['device_profile_id'])
+        data_audit['unique_app_ids'].add(device['application_id'])
+        
         # Check for empty network key
         if not device['nwk_key'] or str(device['nwk_key']).strip().upper() == 'NAN':
             data_audit['statistics']['devices_with_empty_keys'] += 1
@@ -1082,6 +1105,11 @@ def registration_preview():
         dev_eui = str(device['dev_eui']).strip()
         if not dev_eui or len(dev_eui) != 16 or not all(c in '0123456789ABCDEFabcdef' for c in dev_eui):
             data_audit['statistics']['devices_with_invalid_eui'] += 1
+        
+        # Check device_profile_id format (should be valid UUID)
+        profile_id = str(device['device_profile_id']).strip()
+        if not profile_id or not _is_valid_uuid(profile_id):
+            data_audit['statistics']['devices_with_invalid_profile_id'] += 1
         
         # Check key formats (should be 32 hex chars)
         nwk_key = str(device['nwk_key']).strip()
@@ -1106,12 +1134,28 @@ def registration_preview():
         data_audit['warnings'].append(
             f"⚠️ {data_audit['statistics']['devices_with_invalid_keys']} Gerät(e) haben ungültige Schlüssel (sollten 32 Hex-Zeichen sein)"
         )
+    if data_audit['statistics']['devices_with_invalid_profile_id'] > 0:
+        data_audit['warnings'].append(
+            f"⚠️ {data_audit['statistics']['devices_with_invalid_profile_id']} Gerät(e) haben ungültige Device Profile ID (sollte eine gültige UUID sein)"
+        )
+    
+    # Warning if all devices use the same profile ID
+    if len(data_audit['unique_profile_ids']) == 1:
+        profile_id_str = list(data_audit['unique_profile_ids'])[0]
+        data_audit['warnings'].append(
+            f"ℹ️ Alle Geräte verwenden die gleiche Device Profile ID: <code>{profile_id_str}</code><br/>"
+            f"<small>Bitte stellen Sie sicher, dass diese ID in Ihrer ChirpStack-Instanz existiert (nicht gelöscht oder in anderem Tenant)</small>"
+        )
     
     logger.info(f"Data audit: {data_audit}")
     
     # Flash warnings if there are issues
     for warning in data_audit['warnings']:
         flash(warning, 'warning')
+    
+    # Convert sets to lists for JSON serialization in templates
+    data_audit['unique_profile_ids'] = list(data_audit['unique_profile_ids'])
+    data_audit['unique_app_ids'] = list(data_audit['unique_app_ids'])
     
     # Create preview DataFrame
     preview_df = pd.DataFrame(mapped_devices)

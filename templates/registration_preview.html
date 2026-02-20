@@ -71,6 +71,14 @@
                             <p class="title is-4 {% if data_audit.statistics.devices_with_invalid_keys > 0 %}has-text-warning{% endif %}">{{ data_audit.statistics.devices_with_invalid_keys }}</p>
                         </div>
                     </div>
+                    {% if data_audit.statistics.get('devices_with_invalid_profile_id', 0) > 0 %}
+                    <div class="column is-one-quarter">
+                        <div class="box" style="background-color: #4a3a2a; text-align: center;">
+                            <p class="heading">Ungültige Profile ID</p>
+                            <p class="title is-4 has-text-warning">{{ data_audit.statistics.devices_with_invalid_profile_id }}</p>
+                        </div>
+                    </div>
+                    {% endif %}
                 </div>
                 
                 {% if data_audit.warnings %}
@@ -86,6 +94,19 @@
                 {% else %}
                 <div class="mt-4">
                     <p class="has-text-success">✓ Daten sehen gut aus!</p>
+                </div>
+                {% endif %}
+
+                <!-- Device Profile IDs Section -->
+                {% if data_audit and data_audit.unique_profile_ids %}
+                <div class="mt-5" style="border-top: 1px solid #444; padding-top: 1.5rem;">
+                    <h4 class="subtitle is-6 has-text-light mb-3">📋 Device Profile IDs (werden für alle Geräte verwendet):</h4>
+                    {% for profile_id in data_audit.unique_profile_ids %}
+                    <div class="box" style="background-color: #2a2a3e; border-left: 4px solid #ffdd57;">
+                        <code class="has-text-warning" style="word-break: break-all; font-size: 0.9em;">{{ profile_id }}</code>
+                        <p class="help has-text-grey-light mt-2">Bitte stellen Sie sicher, dass diese ID in Ihrer ChirpStack-Instanz existiert</p>
+                    </div>
+                    {% endfor %}
                 </div>
                 {% endif %}
             </div>
@@ -189,15 +210,16 @@
             <div class="notification is-warning dark-notification mb-5">
                 <h3 class="subtitle is-5 has-text-dark">
                     <i class="fas fa-exclamation-triangle"></i>
-                    Wichtige Hinweise
+                    ⚠️ Kritische Überprüfungen vor der Registrierung
                 </h3>
                 <div class="content has-text-dark">
                     <ul>
-                        <li>Die Registrierung erstellt <strong>{{ device_count }} Geräte</strong> in ChirpStack</li>
-                        <li>Stellen Sie sicher, dass die Application ID und Device Profile ID existieren</li>
-                        <li>DevEUIs müssen eindeutig sein (keine Duplikate)</li>
-                        <li>Der Prozess kann nicht rückgängig gemacht werden</li>
-                        <li>Bei Fehlern werden Details im Log gespeichert</li>
+                        <li><strong>Device Profile ID überprüfen:</strong> Stellen Sie sicher, dass die oben angezeigten Device Profile ID(s) in Ihrer ChirpStack-Instanz existieren. Wenn diese ID nicht existiert, schlagen alle Registrierungen fehl!</li>
+                        <li><strong>Application ID überprüfen:</strong> Überprüfen Sie, dass die Application in ChirpStack existiert und Sie Zugriff darauf haben</li>
+                        <li><strong>Eindeutige DevEUIs:</strong> Alle Geräte-EUIs müssen eindeutig sein (keine Duplikate)</li>
+                        <li><strong>Netzwerk- und Anwendungsschlüssel:</strong> Überprüfen Sie, dass alle erforderlichen Schlüssel vorhanden sind</li>
+                        <li><strong>Nicht rückgängig zu machen:</strong> Der Registrierungsprozess kann nicht rückgängig gemacht werden</li>
+                        <li><strong>Fehler-Logging:</strong> Bei Fehlern werden alle Details im Log gespeichert</li>
                     </ul>
                 </div>
             </div>
