@@ -236,17 +236,6 @@ python app.py
 
 Anwendung verfügbar auf http://localhost:5000
 
-### PyInstaller EXE erstellen
-
-\\\ash
-# PyInstaller installieren
-pip install pyinstaller
-
-# EXE bauen
-pyinstaller app.spec
-
-# Ergebnis: dist/LoRaWAN_Device_Registration/
-\\\
 
 ---
 
